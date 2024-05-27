@@ -3,11 +3,14 @@ from datetime import date
 from pytest import fixture
 
 from hedgineer.core import (
+    accumulate_fact,
     bucket_fact,
     bucket_facts,
     deeply_spread,
+    diff_row,
     extract_attributes,
     flatten_and_sort_facts,
+    generate_empty_row,
     generate_security_master,
     generate_security_master_from_facts,
     join_positions,
@@ -149,8 +152,117 @@ def test_flatten_and_sort_facts(bucketed_facts):
     ]
 
 
-def test_generate_security_master_from_facts(sorted_flat_facts):
-    attributes, attribute_index = extract_attributes(AUDIT_TRAIL, ATTRIBUTE_PRIORITY)
+def test_generate_empty_row():
+    assert generate_empty_row(4) == (None, None, None, None)
+    assert generate_empty_row(5) == (None, None, None, None, None)
+    assert generate_empty_row(0) == ()
+
+
+def test_diff_row(audit_trail, attribute_priority):
+    _, attribute_index = extract_attributes(audit_trail, attribute_priority)
+    prior_row = (
+        1,
+        date(24, 1, 1),
+        None,
+        "equity",
+        "GRPH",
+        "Graphite bio",
+        None,
+        "healthcare",
+        "biotechnology",
+    )
+    new_row = diff_row(
+        prior_row,
+        1,
+        date(24, 3, 22),
+        attribute_index,
+        [("ticker", "LENZ"), ("name", "Lenz Therapeutics, Inc")],
+    )
+
+    assert new_row == (
+        1,
+        date(24, 3, 22),
+        None,
+        "equity",
+        "LENZ",
+        "Lenz Therapeutics, Inc",
+        None,
+        "healthcare",
+        "biotechnology",
+    )
+
+
+def test_accumulate_fact(audit_trail, attribute_priority):
+    attributes, attribute_index = extract_attributes(audit_trail, attribute_priority)
+    sm_table = []
+
+    flat_fact = (
+        1,
+        date(2024, 1, 1),
+        [
+            ("gics_sector", "healthcare"),
+            ("ticker", "GRPH"),
+            ("gics_industry", "biotechnology"),
+            ("asset_class", "equity"),
+            ("name", "Graphite bio"),
+        ],
+    )
+    accumulate_fact((sm_table, attributes, attribute_index), flat_fact)
+
+    assert sm_table == [
+        (
+            1,
+            date(2024, 1, 1),
+            None,
+            "equity",
+            "GRPH",
+            "Graphite bio",
+            None,
+            "healthcare",
+            "biotechnology",
+        )
+    ]
+
+    flat_fact = (
+        1,
+        date(2024, 3, 22),
+        [
+            ("ticker", "LENZ"),
+            ("name", "Lenz Therapeutics, Inc"),
+        ],
+    )
+    accumulate_fact((sm_table, attributes, attribute_index), flat_fact)
+
+    assert sm_table == [
+        (
+            1,
+            date(2024, 1, 1),
+            date(2024, 3, 22),
+            "equity",
+            "GRPH",
+            "Graphite bio",
+            None,
+            "healthcare",
+            "biotechnology",
+        ),
+        (
+            1,
+            date(2024, 3, 22),
+            None,
+            "equity",
+            "LENZ",
+            "Lenz Therapeutics, Inc",
+            None,
+            "healthcare",
+            "biotechnology",
+        ),
+    ]
+
+
+def test_generate_security_master_from_facts(
+    audit_trail, attribute_priority, sorted_flat_facts
+):
+    attributes, attribute_index = extract_attributes(audit_trail, attribute_priority)
     security_master = generate_security_master_from_facts(
         sorted_flat_facts, attributes, attribute_index
     )

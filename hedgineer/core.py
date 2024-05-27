@@ -35,48 +35,52 @@ def bucket_fact(bucket, fact):
     return bucket
 
 
-def accumulate_fact(
-    security_master__attributes__attribute_index: list[list[Any]], flat_fact: tuple
-):
-    security_master, attributes, attribute_index = (
-        security_master__attributes__attribute_index
-    )
-    security_id, effective_date, facts = flat_fact
-    new_security = len(security_master) == 0 or security_master[-1][0] != security_id
-
-    if new_security:
-        row = [
-            security_id,
-            effective_date,
-            None,
-            *map(lambda _: None, range(len(attributes))),
-        ]
-    else:
-        row = list(security_master[-1])
-
-    # Set date range
-    row[1], row[2] = effective_date, None
-
-    # Add new facts that diff from prior row
-    for key, value in facts:
-        row[3 + attribute_index[key]] = value
-
-    # Don't forget to modify the last row's effective end date if needed
-    if not new_security:
-        security_master[-1] = tuple(
-            (*security_master[-1][:2], effective_date, *security_master[-1][3:])
-        )
-
-    security_master.append(tuple(row))
-    return (security_master, attributes, attribute_index)
-
-
 def bucket_facts(audit_trail):
     return reduce(bucket_fact, audit_trail, {})
 
 
 def flatten_and_sort_facts(bucketed_facts):
     return sorted(deeply_spread(bucketed_facts), key=itemgetter(0, 1))
+
+
+def generate_empty_row(length):
+    return tuple(map(lambda _: None, range(length)))
+
+
+def diff_row(row, security_id, effective_date, attribute_index, facts):
+    mutable_row = list(row)
+
+    # Set date range
+    mutable_row[0], mutable_row[1] = security_id, effective_date
+
+    # Add new facts that diff from prior mutable_row
+    for key, value in facts:
+        mutable_row[3 + attribute_index[key]] = value
+
+    return tuple(mutable_row)
+
+
+def accumulate_fact(security_master__attributes__attribute_index, flat_fact):
+    security_master, attributes, attribute_index = (
+        security_master__attributes__attribute_index
+    )
+    security_id, effective_date, facts = flat_fact
+    new_security = len(security_master) == 0 or security_master[-1][0] != security_id
+
+    prior_row = (
+        generate_empty_row(3 + len(attributes)) if new_security else security_master[-1]
+    )
+    new_row = diff_row(prior_row, security_id, effective_date, attribute_index, facts)
+
+    # Modify the last row's end date
+    if not new_security:
+        security_master[-1] = tuple(
+            (*security_master[-1][:2], effective_date, *security_master[-1][3:])
+        )
+
+    # Now we can append the new row
+    security_master.append(new_row)
+    return (security_master, attributes, attribute_index)
 
 
 def generate_security_master_from_facts(sorted_flat_facts, attributes, attribute_index):
