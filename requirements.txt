@@ -1,4 +1,3 @@
-hedgineer @ file:///Users/corey/projects/hedgineer/hedgineer
 iniconfig==2.0.0
 numpy==1.26.4
 packaging==24.0
