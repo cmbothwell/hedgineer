@@ -82,11 +82,20 @@ def flatten_and_sort_facts(bucketed_facts):
     return sorted(deeply_spread(bucketed_facts), key=itemgetter(0, 1))
 
 
-def generate_security_master(sorted_flat_facts, attributes, attribute_index):
+def generate_security_master_from_facts(sorted_flat_facts, attributes, attribute_index):
     security_master, _, _ = reduce(
         accumulate_fact, sorted_flat_facts, ([], attributes, attribute_index)
     )
     return security_master
+
+
+def generate_security_master(audit_trail, attribute_priority):
+    attributes, attribute_index = extract_attributes(audit_trail, attribute_priority)
+    bucketed_facts = bucket_facts(audit_trail)
+    sorted_flat_facts = flatten_and_sort_facts(bucketed_facts)
+    return generate_security_master_from_facts(
+        sorted_flat_facts, attributes, attribute_index
+    )
 
 
 def join_position(security_master: list[tuple], position: tuple) -> tuple:

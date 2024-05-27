@@ -8,6 +8,7 @@ from hedgineer.core import (
     deeply_spread,
     extract_attributes,
     flatten_and_sort_facts,
+    generate_security_master_from_facts,
     generate_security_master,
     join_positions,
 )
@@ -18,6 +19,11 @@ from hedgineer.utils import parse_date
 @fixture
 def audit_trail():
     return AUDIT_TRAIL
+
+
+@fixture
+def attribute_priority():
+    return ATTRIBUTE_PRIORITY
 
 
 @fixture
@@ -52,7 +58,9 @@ def sorted_flat_facts(bucketed_facts):
 @fixture
 def security_master(sorted_flat_facts):
     attributes, attribute_index = extract_attributes(AUDIT_TRAIL, ATTRIBUTE_PRIORITY)
-    return generate_security_master(sorted_flat_facts, attributes, attribute_index)
+    return generate_security_master_from_facts(
+        sorted_flat_facts, attributes, attribute_index
+    )
 
 
 def test_deeply_spread(nested_dict):
@@ -135,9 +143,82 @@ def test_flatten_and_sort_facts(bucketed_facts):
     ]
 
 
-def test_generate_security_master(sorted_flat_facts):
+def test_generate_security_master_from_facts(sorted_flat_facts):
     attributes, attribute_index = extract_attributes(AUDIT_TRAIL, ATTRIBUTE_PRIORITY)
-    assert generate_security_master(sorted_flat_facts, attributes, attribute_index) == [
+    assert generate_security_master_from_facts(
+        sorted_flat_facts, attributes, attribute_index
+    ) == [
+        (
+            1,
+            datetime(2024, 1, 1, 0, 0),
+            datetime(2024, 3, 22, 0, 0),
+            "equity",
+            "GRPH",
+            "Graphite bio",
+            None,
+            "healthcare",
+            "biotechnology",
+        ),
+        (
+            1,
+            datetime(2024, 3, 22, 0, 0),
+            datetime(2024, 5, 23, 0, 0),
+            "equity",
+            "LENZ",
+            "Lenz Therapeutics, Inc",
+            None,
+            "healthcare",
+            "biotechnology",
+        ),
+        (
+            1,
+            datetime(2024, 5, 23, 0, 0),
+            None,
+            "equity",
+            "LENZ",
+            "Lenz Therapeutics, Inc",
+            400,
+            "healthcare",
+            "biotechnology",
+        ),
+        (
+            2,
+            datetime(2023, 1, 1, 0, 0),
+            datetime(2023, 3, 17, 0, 0),
+            None,
+            "V",
+            None,
+            None,
+            "technology",
+            None,
+        ),
+        (
+            2,
+            datetime(2023, 3, 17, 0, 0),
+            datetime(2024, 5, 23, 0, 0),
+            None,
+            "V",
+            None,
+            None,
+            "financials",
+            None,
+        ),
+        (
+            2,
+            datetime(2024, 5, 23, 0, 0),
+            None,
+            None,
+            "V",
+            None,
+            549000,
+            "financials",
+            None,
+        ),
+    ]
+
+
+def test_generate_security_master(audit_trail, attribute_priority):
+    assert generate_security_master(audit_trail, attribute_priority) == [
         (
             1,
             datetime(2024, 1, 1, 0, 0),

@@ -1,13 +1,5 @@
-import numpy as np
-import pandas as pd
-import pyarrow as pa
-import pyarrow.csv as csv
-import pyarrow.parquet as pq
-
 from .core import (
-    bucket_facts,
     extract_attributes,
-    flatten_and_sort_facts,
     format_table,
     generate_security_master,
     join_positions,
@@ -15,11 +7,7 @@ from .core import (
 from .globals import ATTRIBUTE_PRIORITY, AUDIT_TRAIL, POSITIONS_TABLE
 
 attributes, attribute_index = extract_attributes(AUDIT_TRAIL, ATTRIBUTE_PRIORITY)
-bucketed_facts = bucket_facts(AUDIT_TRAIL)
-sorted_flat_facts = flatten_and_sort_facts(bucketed_facts)
-security_master = generate_security_master(
-    sorted_flat_facts, attributes, attribute_index
-)
+security_master = generate_security_master(AUDIT_TRAIL, ATTRIBUTE_PRIORITY)
 joined_positions = join_positions(security_master, POSITIONS_TABLE)
 
 print(
