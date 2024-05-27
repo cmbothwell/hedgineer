@@ -8,8 +8,8 @@ from hedgineer.core import (
     deeply_spread,
     extract_attributes,
     flatten_and_sort_facts,
-    generate_security_master_from_facts,
     generate_security_master,
+    generate_security_master_from_facts,
     join_positions,
 )
 from hedgineer.globals import ATTRIBUTE_PRIORITY, AUDIT_TRAIL, POSITIONS_TABLE
@@ -43,6 +43,12 @@ def nested_dict():
             "2": {"x": 0, "y": [1, 2]},
         },
     }
+
+
+@fixture
+def attributes():
+    attributes, _ = extract_attributes(AUDIT_TRAIL, ATTRIBUTE_PRIORITY)
+    return attributes
 
 
 @fixture
@@ -145,9 +151,11 @@ def test_flatten_and_sort_facts(bucketed_facts):
 
 def test_generate_security_master_from_facts(sorted_flat_facts):
     attributes, attribute_index = extract_attributes(AUDIT_TRAIL, ATTRIBUTE_PRIORITY)
-    assert generate_security_master_from_facts(
+    security_master = generate_security_master_from_facts(
         sorted_flat_facts, attributes, attribute_index
-    ) == [
+    )
+
+    assert security_master == [
         (
             1,
             datetime(2024, 1, 1, 0, 0),
@@ -218,7 +226,8 @@ def test_generate_security_master_from_facts(sorted_flat_facts):
 
 
 def test_generate_security_master(audit_trail, attribute_priority):
-    assert generate_security_master(audit_trail, attribute_priority) == [
+    _, security_master = generate_security_master(audit_trail, attribute_priority)
+    assert security_master == [
         (
             1,
             datetime(2024, 1, 1, 0, 0),
@@ -288,8 +297,9 @@ def test_generate_security_master(audit_trail, attribute_priority):
     ]
 
 
-def test_join_positions(security_master, positions_table):
-    assert join_positions(security_master, positions_table) == [
+def test_join_positions(security_master, positions_table, attributes):
+    _, joined_positions = join_positions(attributes, security_master, positions_table)
+    assert joined_positions == [
         (
             1,
             100,

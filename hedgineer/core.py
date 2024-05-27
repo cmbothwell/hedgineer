@@ -93,9 +93,13 @@ def generate_security_master(audit_trail, attribute_priority):
     attributes, attribute_index = extract_attributes(audit_trail, attribute_priority)
     bucketed_facts = bucket_facts(audit_trail)
     sorted_flat_facts = flatten_and_sort_facts(bucketed_facts)
-    return generate_security_master_from_facts(
+
+    header = ["security_id", "effective_start_date", "effective_end_date", *attributes]
+    security_master = generate_security_master_from_facts(
         sorted_flat_facts, attributes, attribute_index
     )
+
+    return (header, security_master)
 
 
 def join_position(security_master: list[tuple], position: tuple) -> tuple:
@@ -113,24 +117,14 @@ def join_position(security_master: list[tuple], position: tuple) -> tuple:
     return tuple((security_id, quantity, date, *master_row[3:]))
 
 
-def join_positions(security_master: list[tuple], positions_table: list[tuple]):
-    return [join_position(security_master, position) for position in positions_table]
-
-
-def get_pretty_table(table) -> str:
-    s = [[str(e) for e in row] for row in table]
-    lens = [max(map(len, col)) for col in zip(*s)]
-    fmt = "\t".join("{{:{0}}}".format(x) for x in lens)
-    pretty_table = [fmt.format(*row) for row in s]
-    return "\n".join(pretty_table)
-
-
-def format_table(title, header, table) -> str:
-    table = [
-        tuple(format_date(v) if isinstance(v, datetime) else v for v in t)
-        for t in table
+def join_positions(
+    attributes: list[str], security_master: list[tuple], positions_table: list[tuple]
+):
+    header = ["security_id", "quantity", "date", *attributes]
+    joined_positions = [
+        join_position(security_master, position) for position in positions_table
     ]
-    return title + "\n" + get_pretty_table([header, *table]) + "\n"
+    return header, joined_positions
 
 
 # Scratchpad
