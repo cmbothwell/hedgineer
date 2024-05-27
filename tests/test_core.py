@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date
 
 from pytest import fixture
 
@@ -94,29 +94,29 @@ def test_bucket_fact():
     bucket = {}
 
     bucket_fact(bucket, (1, "gics_sector", "technology", parse_date("01/01/24")))
-    assert bucket == {1: {datetime(2024, 1, 1): [("gics_sector", "technology")]}}
+    assert bucket == {1: {date(2024, 1, 1): [("gics_sector", "technology")]}}
 
     bucket_fact(bucket, (1, "name", "LENZ", parse_date("01/01/24")))
     assert bucket == {
-        1: {datetime(2024, 1, 1): [("gics_sector", "technology"), ("name", "LENZ")]}
+        1: {date(2024, 1, 1): [("gics_sector", "technology"), ("name", "LENZ")]}
     }
 
     bucket_fact(bucket, (1, "gics_sector", "healthcare", parse_date("03/01/24")))
     bucket_fact(bucket, (1, "name", "New Name", parse_date("03/01/24")))
     assert bucket == {
         1: {
-            datetime(2024, 1, 1): [("gics_sector", "technology"), ("name", "LENZ")],
-            datetime(2024, 3, 1): [("gics_sector", "healthcare"), ("name", "New Name")],
+            date(2024, 1, 1): [("gics_sector", "technology"), ("name", "LENZ")],
+            date(2024, 3, 1): [("gics_sector", "healthcare"), ("name", "New Name")],
         }
     }
 
     bucket_fact(bucket, (2, "name", "ACME Corp.", parse_date("01/01/22")))
     assert bucket == {
         1: {
-            datetime(2024, 1, 1): [("gics_sector", "technology"), ("name", "LENZ")],
-            datetime(2024, 3, 1): [("gics_sector", "healthcare"), ("name", "New Name")],
+            date(2024, 1, 1): [("gics_sector", "technology"), ("name", "LENZ")],
+            date(2024, 3, 1): [("gics_sector", "healthcare"), ("name", "New Name")],
         },
-        2: {datetime(2022, 1, 1): [("name", "ACME Corp.")]},
+        2: {date(2022, 1, 1): [("name", "ACME Corp.")]},
     }
 
 
@@ -124,7 +124,7 @@ def test_flatten_and_sort_facts(bucketed_facts):
     assert flatten_and_sort_facts(bucketed_facts) == [
         (
             1,
-            datetime(2024, 1, 1, 0, 0),
+            date(2024, 1, 1),
             [
                 ("gics_sector", "healthcare"),
                 ("ticker", "GRPH"),
@@ -135,17 +135,17 @@ def test_flatten_and_sort_facts(bucketed_facts):
         ),
         (
             1,
-            datetime(2024, 3, 22, 0, 0),
+            date(2024, 3, 22),
             [("ticker", "LENZ"), ("name", "Lenz Therapeutics, Inc")],
         ),
-        (1, datetime(2024, 5, 23, 0, 0), [("market_cap", 400)]),
+        (1, date(2024, 5, 23), [("market_cap", 400)]),
         (
             2,
-            datetime(2023, 1, 1, 0, 0),
+            date(2023, 1, 1),
             [("ticker", "V"), ("gics_sector", "technology")],
         ),
-        (2, datetime(2023, 3, 17, 0, 0), [("gics_sector", "financials")]),
-        (2, datetime(2024, 5, 23, 0, 0), [("market_cap", 549000)]),
+        (2, date(2023, 3, 17), [("gics_sector", "financials")]),
+        (2, date(2024, 5, 23), [("market_cap", 549000)]),
     ]
 
 
@@ -158,8 +158,8 @@ def test_generate_security_master_from_facts(sorted_flat_facts):
     assert security_master == [
         (
             1,
-            datetime(2024, 1, 1, 0, 0),
-            datetime(2024, 3, 22, 0, 0),
+            date(2024, 1, 1),
+            date(2024, 3, 22),
             "equity",
             "GRPH",
             "Graphite bio",
@@ -169,8 +169,8 @@ def test_generate_security_master_from_facts(sorted_flat_facts):
         ),
         (
             1,
-            datetime(2024, 3, 22, 0, 0),
-            datetime(2024, 5, 23, 0, 0),
+            date(2024, 3, 22),
+            date(2024, 5, 23),
             "equity",
             "LENZ",
             "Lenz Therapeutics, Inc",
@@ -180,7 +180,7 @@ def test_generate_security_master_from_facts(sorted_flat_facts):
         ),
         (
             1,
-            datetime(2024, 5, 23, 0, 0),
+            date(2024, 5, 23),
             None,
             "equity",
             "LENZ",
@@ -191,8 +191,8 @@ def test_generate_security_master_from_facts(sorted_flat_facts):
         ),
         (
             2,
-            datetime(2023, 1, 1, 0, 0),
-            datetime(2023, 3, 17, 0, 0),
+            date(2023, 1, 1),
+            date(2023, 3, 17),
             None,
             "V",
             None,
@@ -202,8 +202,8 @@ def test_generate_security_master_from_facts(sorted_flat_facts):
         ),
         (
             2,
-            datetime(2023, 3, 17, 0, 0),
-            datetime(2024, 5, 23, 0, 0),
+            date(2023, 3, 17),
+            date(2024, 5, 23),
             None,
             "V",
             None,
@@ -213,7 +213,7 @@ def test_generate_security_master_from_facts(sorted_flat_facts):
         ),
         (
             2,
-            datetime(2024, 5, 23, 0, 0),
+            date(2024, 5, 23),
             None,
             None,
             "V",
@@ -230,8 +230,8 @@ def test_generate_security_master(audit_trail, attribute_priority):
     assert security_master == [
         (
             1,
-            datetime(2024, 1, 1, 0, 0),
-            datetime(2024, 3, 22, 0, 0),
+            date(2024, 1, 1),
+            date(2024, 3, 22),
             "equity",
             "GRPH",
             "Graphite bio",
@@ -241,8 +241,8 @@ def test_generate_security_master(audit_trail, attribute_priority):
         ),
         (
             1,
-            datetime(2024, 3, 22, 0, 0),
-            datetime(2024, 5, 23, 0, 0),
+            date(2024, 3, 22),
+            date(2024, 5, 23),
             "equity",
             "LENZ",
             "Lenz Therapeutics, Inc",
@@ -252,7 +252,7 @@ def test_generate_security_master(audit_trail, attribute_priority):
         ),
         (
             1,
-            datetime(2024, 5, 23, 0, 0),
+            date(2024, 5, 23),
             None,
             "equity",
             "LENZ",
@@ -263,8 +263,8 @@ def test_generate_security_master(audit_trail, attribute_priority):
         ),
         (
             2,
-            datetime(2023, 1, 1, 0, 0),
-            datetime(2023, 3, 17, 0, 0),
+            date(2023, 1, 1),
+            date(2023, 3, 17),
             None,
             "V",
             None,
@@ -274,8 +274,8 @@ def test_generate_security_master(audit_trail, attribute_priority):
         ),
         (
             2,
-            datetime(2023, 3, 17, 0, 0),
-            datetime(2024, 5, 23, 0, 0),
+            date(2023, 3, 17),
+            date(2024, 5, 23),
             None,
             "V",
             None,
@@ -285,7 +285,7 @@ def test_generate_security_master(audit_trail, attribute_priority):
         ),
         (
             2,
-            datetime(2024, 5, 23, 0, 0),
+            date(2024, 5, 23),
             None,
             None,
             "V",
@@ -303,7 +303,7 @@ def test_join_positions(security_master, positions_table, attributes):
         (
             1,
             100,
-            datetime(2024, 2, 1, 0, 0),
+            date(2024, 2, 1),
             "equity",
             "GRPH",
             "Graphite bio",
@@ -314,7 +314,7 @@ def test_join_positions(security_master, positions_table, attributes):
         (
             1,
             105,
-            datetime(2024, 2, 1, 0, 0),
+            date(2024, 2, 1),
             "equity",
             "GRPH",
             "Graphite bio",
@@ -325,7 +325,7 @@ def test_join_positions(security_master, positions_table, attributes):
         (
             2,
             150,
-            datetime(2024, 2, 1, 0, 0),
+            date(2024, 2, 1),
             None,
             "V",
             None,
@@ -336,7 +336,7 @@ def test_join_positions(security_master, positions_table, attributes):
         (
             1,
             120,
-            datetime(2024, 3, 1, 0, 0),
+            date(2024, 3, 1),
             "equity",
             "GRPH",
             "Graphite bio",
@@ -347,7 +347,7 @@ def test_join_positions(security_master, positions_table, attributes):
         (
             2,
             140,
-            datetime(2024, 3, 1, 0, 0),
+            date(2024, 3, 1),
             None,
             "V",
             None,
@@ -371,25 +371,25 @@ def test_extract_attributes():
 def test_bucket_facts(audit_trail):
     assert bucket_facts(audit_trail) == {
         1: {
-            datetime(2024, 3, 22, 0, 0): [
+            date(2024, 3, 22): [
                 ("ticker", "LENZ"),
                 ("name", "Lenz Therapeutics, Inc"),
             ],
-            datetime(2024, 1, 1, 0, 0): [
+            date(2024, 1, 1): [
                 ("gics_sector", "healthcare"),
                 ("ticker", "GRPH"),
                 ("gics_industry", "biotechnology"),
                 ("asset_class", "equity"),
                 ("name", "Graphite bio"),
             ],
-            datetime(2024, 5, 23, 0, 0): [("market_cap", 400)],
+            date(2024, 5, 23): [("market_cap", 400)],
         },
         2: {
-            datetime(2024, 5, 23, 0, 0): [("market_cap", 549000)],
-            datetime(2023, 1, 1, 0, 0): [
+            date(2024, 5, 23): [("market_cap", 549000)],
+            date(2023, 1, 1): [
                 ("ticker", "V"),
                 ("gics_sector", "technology"),
             ],
-            datetime(2023, 3, 17, 0, 0): [("gics_sector", "financials")],
+            date(2023, 3, 17): [("gics_sector", "financials")],
         },
     }

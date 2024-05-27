@@ -1,9 +1,11 @@
+import pyarrow as pa
+
 from .core import (
     extract_attributes,
     generate_security_master,
     join_positions,
 )
-from .io import format_table, to_arrow, write_parquet, write_csv
+from .io import format_table, to_arrow, from_arrow, to_pandas, write_parquet, write_csv
 from .globals import ATTRIBUTE_PRIORITY, AUDIT_TRAIL, POSITIONS_TABLE
 
 attributes, attribute_index = extract_attributes(AUDIT_TRAIL, ATTRIBUTE_PRIORITY)
@@ -17,21 +19,35 @@ arrow_table = to_arrow(
     security_master,
 )
 
-write_parquet("./data/security_master.parquet", sm_header, security_master)
-write_csv("./data/security_master.csv", sm_header, security_master)
+converted_header, converted_table = from_arrow(arrow_table)
 
-print(
-    format_table(
-        "Security Master",
-        sm_header,
-        security_master,
-    )
-)
+# write_parquet("./data/security_master.parquet", sm_header, security_master)
+# write_csv("./data/security_master.csv", sm_header, security_master)
 
-print(
-    format_table(
-        "Consolidated Position Information",
-        jp_header,
-        joined_positions,
-    )
-)
+# print(
+#     format_table(
+#         "Security Master",
+#         sm_header,
+#         security_master,
+#     )
+# )
+
+# print(
+#     format_table(
+#         "Security Master",
+#         converted_header,
+#         converted_table,
+#     )
+# )
+
+assert sm_header == converted_header
+assert security_master == converted_table
+
+
+# print(
+#     format_table(
+#         "Consolidated Position Information",
+#         jp_header,
+#         joined_positions,
+#     )
+# )

@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date
 
 import pandas as pd
 import pyarrow as pa
@@ -18,8 +18,7 @@ def get_pretty_table(table) -> str:
 
 def format_table(title, header, table) -> str:
     table = [
-        tuple(format_date(v) if isinstance(v, datetime) else v for v in t)
-        for t in table
+        tuple(format_date(v) if isinstance(v, date) else v for v in t) for t in table
     ]
     return title + "\n" + get_pretty_table([header, *table]) + "\n"
 
@@ -42,8 +41,8 @@ def parse_data_type(column):
         return pa.float64()
     if column_type is str:
         return pa.string()
-    if column_type is datetime:
-        return pa.date64()
+    if column_type is date:
+        return pa.date32()
 
     raise Exception("Could not parse column for Arrow conversion: data type not found")
 
@@ -64,6 +63,23 @@ def to_arrow(
     return pa.table(arrow_columns, names=column_names)
 
 
+def from_arrow(arrow_table):
+    py_table = arrow_table.to_pylist()
+
+    if len(py_table) == 0:
+        return (None, None)
+
+    header = [k for k in py_table[0].keys()]
+    table = [tuple(v for v in row.values()) for row in py_table]
+
+    return header, table
+
+
+def to_pandas(column_names: list[str], table: list[tuple]):
+    arrow_table = to_arrow(column_names, table)
+    return arrow_table.to_pandas()
+
+
 def write_parquet(filename: str, column_names: list[str], table: list[tuple]):
     arrow_table = to_arrow(column_names, table)
     pq.write_table(arrow_table, filename)
@@ -81,12 +97,3 @@ def write_csv(filename: str, column_names: list[str], table: list[tuple]):
 #     security_master,
 #     columns=["security_id", "effective_start_date", "effective_end_date", *attributes],
 # )
-
-# security_master_pd_copy = security_master_pd.copy(deep=True)
-# assert security_master_pd.equals(security_master_pd_copy)
-
-# pq.write_table(arrow_table, "security_master.parquet")
-# reloaded_table = pq.read_table("security_master.parquet")
-
-# csv.write_csv(reloaded_table, "security_master.csv")
-# reloaded_table = csv.read_csv("security_master.csv")

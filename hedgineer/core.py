@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date
 from functools import reduce
 from operator import itemgetter
 from typing import Any

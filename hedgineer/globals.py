@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date
 
 from .utils import parse_date
 
@@ -24,9 +24,9 @@ AUDIT_TRAIL: list[tuple] = [
 ]
 
 POSITIONS_TABLE = [
-    (1, 100, datetime(2024, 2, 1)),
-    (1, 105, datetime(2024, 2, 1)),
-    (2, 150, datetime(2024, 2, 1)),
-    (1, 120, datetime(2024, 3, 1)),
-    (2, 140, datetime(2024, 3, 1)),
+    (1, 100, date(2024, 2, 1)),
+    (1, 105, date(2024, 2, 1)),
+    (2, 150, date(2024, 2, 1)),
+    (1, 120, date(2024, 3, 1)),
+    (2, 140, date(2024, 3, 1)),
 ]
