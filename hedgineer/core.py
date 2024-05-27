@@ -1,9 +1,6 @@
-from datetime import date
 from functools import reduce
 from operator import itemgetter
 from typing import Any
-
-from .utils import format_date
 
 
 def extract_attributes(audit_trail, attribute_priority):
@@ -125,28 +122,3 @@ def join_positions(
         join_position(security_master, position) for position in positions_table
     ]
     return header, joined_positions
-
-
-# Scratchpad
-
-# formatted_sorted_flat_facts = [
-#     [format_date(val) if isinstance(val, datetime) else val for val in flat_fact]
-#     for flat_fact in sorted_flat_facts
-# ]
-
-# flat_facts: list[tuple] = [
-#     (security_id, date, facts)
-#     for security_id, facts_by_date in bucketed_facts.items()
-#     for date, facts in facts_by_date.items()
-# ]
-
-
-# def deeply_spread_(dd):
-#     result_primitives = [(k, v) for k, v in dd.items() if not isinstance(v, dict)]
-#     result_dicts = [
-#         x
-#         for k, v in dd.items()
-#         if isinstance(v, dict)
-#         for x in map(lambda k_: (k, *k_), deeply_spread(v))
-#     ]
-#     return [*result_dicts, *result_primitives]

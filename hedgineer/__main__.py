@@ -22,15 +22,6 @@ jp_header, joined_positions = join_positions(
     attributes, security_master, POSITIONS_TABLE
 )
 
-engine = create_engine("sqlite:///:memory:", echo=True)
-metadata = MetaData()
-
-metadata, schema = write_sql(
-    engine, metadata, "security_master", sm_header, security_master
-)
-arrow_table, schema = read_sql(engine, metadata, "security_master", schema)
-
-
 # arrow_table, schema = to_arrow(sm_header, security_master)
 # converted_header, converted_table = from_arrow(arrow_table)
 # assert sm_header == converted_header
@@ -81,3 +72,12 @@ arrow_table, schema = read_sql(engine, metadata, "security_master", schema)
 #         joined_positions,
 #     )
 # )
+
+
+# engine = create_engine("sqlite:///:memory:", echo=True)
+# metadata = MetaData()
+
+# metadata, schema = write_sql(
+#     engine, metadata, "security_master", sm_header, security_master
+# )
+# arrow_table, schema = read_sql(engine, metadata, "security_master", schema)
