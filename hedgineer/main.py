@@ -11,7 +11,7 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 import pyarrow.csv as csv
 
-from core import (
+from .core import (
     bucket_fact,
     deeply_spread,
     accumulate_fact,
