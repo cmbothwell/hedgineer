@@ -1,8 +1,15 @@
 from datetime import datetime
+
 from pytest import fixture
-from hedgineer.globals import AUDIT_TRAIL, ATTRIBUTE_PRIORITY
-from hedgineer.core import deeply_spread, bucket_fact, extract_attributes
+
+from hedgineer.core import bucket_fact, bucket_facts, deeply_spread, extract_attributes
+from hedgineer.globals import ATTRIBUTE_PRIORITY, AUDIT_TRAIL
 from hedgineer.utils import parse_date
+
+
+@fixture
+def audit_trail():
+    return AUDIT_TRAIL
 
 
 @fixture
@@ -82,3 +89,30 @@ def test_extract_attributes():
         assert v == attributes.index(k)
         if k in ATTRIBUTE_PRIORITY:
             assert v == ATTRIBUTE_PRIORITY[k]
+
+
+def test_bucket_facts(audit_trail):
+    assert bucket_facts(audit_trail) == {
+        1: {
+            datetime(2024, 3, 22, 0, 0): [
+                ("ticker", "LENZ"),
+                ("name", "Lenz Therapeutics, Inc"),
+            ],
+            datetime(2024, 1, 1, 0, 0): [
+                ("gics_sector", "healthcare"),
+                ("ticker", "GRPH"),
+                ("gics_industry", "biotechnology"),
+                ("asset_class", "equity"),
+                ("name", "Graphite bio"),
+            ],
+            datetime(2024, 5, 23, 0, 0): [("market_cap", 400)],
+        },
+        2: {
+            datetime(2024, 5, 23, 0, 0): [("market_cap", 549000)],
+            datetime(2023, 1, 1, 0, 0): [
+                ("ticker", "V"),
+                ("gics_sector", "technology"),
+            ],
+            datetime(2023, 3, 17, 0, 0): [("gics_sector", "financials")],
+        },
+    }

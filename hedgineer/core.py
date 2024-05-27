@@ -1,4 +1,19 @@
+from datetime import datetime
+from functools import reduce
+from operator import itemgetter
 from typing import Any
+
+from .utils import format_date
+
+
+def extract_attributes(audit_trail, attribute_priority):
+    attributes = sorted(
+        dict.fromkeys(map(lambda raw_fact: raw_fact[1], audit_trail)),
+        key=lambda x: attribute_priority.get(x, float("inf")),
+    )
+    attribute_index = {v: i for i, v in enumerate(attributes)}
+
+    return attributes, attribute_index
 
 
 def deeply_spread(dd):
@@ -59,14 +74,19 @@ def accumulate_fact(
     return (security_master, attributes, attribute_index)
 
 
-def extract_attributes(audit_trail, attribute_priority):
-    attributes = sorted(
-        dict.fromkeys(map(lambda raw_fact: raw_fact[1], audit_trail)),
-        key=lambda x: attribute_priority.get(x, float("inf")),
-    )
-    attribute_index = {v: i for i, v in enumerate(attributes)}
+def bucket_facts(audit_trail):
+    return reduce(bucket_fact, audit_trail, {})
 
-    return attributes, attribute_index
+
+def flatten_and_sort_facts(bucketed_facts):
+    return sorted(deeply_spread(bucketed_facts), key=itemgetter(0, 1))
+
+
+def generate_security_master(sorted_flat_facts, attributes, attribute_index):
+    security_master, _, _ = reduce(
+        accumulate_fact, sorted_flat_facts, ([], attributes, attribute_index)
+    )
+    return security_master
 
 
 def join_position(security_master: list[tuple], position: tuple) -> tuple:
@@ -90,6 +110,14 @@ def get_pretty_table(table) -> str:
     fmt = "\t".join("{{:{0}}}".format(x) for x in lens)
     pretty_table = [fmt.format(*row) for row in s]
     return "\n".join(pretty_table)
+
+
+def format_table(title, header, table) -> str:
+    table = [
+        tuple(format_date(v) if isinstance(v, datetime) else v for v in t)
+        for t in table
+    ]
+    return title + "\n" + get_pretty_table([header, *table]) + "\n"
 
 
 # Scratchpad
