@@ -47,27 +47,22 @@ def parse_data_type(column):
     raise Exception("Could not parse column for Arrow conversion: data type not found")
 
 
-def to_arrow(
-    column_names: list[str],
-    table: list[tuple],
-):
+def to_arrow(column_names: list[str], table: list[tuple]):
     if len(table) == 0:
         return None
 
     raw_columns = list(zip(*table))
     data_types = [parse_data_type(raw_column) for raw_column in raw_columns]
-    arrow_columns = list(
-        map(lambda x: pa.array(x[0], type=x[1]), zip(raw_columns, data_types))
-    )
+    schema = pa.schema(list(zip(column_names, data_types)))
 
-    return pa.table(arrow_columns, names=column_names)
+    return pa.table(raw_columns, schema=schema), schema
 
 
 def from_arrow(arrow_table):
     py_table = arrow_table.to_pylist()
 
     if len(py_table) == 0:
-        return (None, None)
+        return None, None
 
     header = [k for k in py_table[0].keys()]
     table = [tuple(v for v in row.values()) for row in py_table]
@@ -76,24 +71,38 @@ def from_arrow(arrow_table):
 
 
 def to_pandas(column_names: list[str], table: list[tuple]):
-    arrow_table = to_arrow(column_names, table)
-    return arrow_table.to_pandas()
+    arrow_table, schema = to_arrow(column_names, table)
+    return arrow_table.to_pandas(), schema
+
+
+def from_pandas(df, schema):
+    arrow_table = pa.Table.from_pandas(df, schema=schema)
+    return from_arrow(arrow_table)
 
 
 def write_parquet(filename: str, column_names: list[str], table: list[tuple]):
-    arrow_table = to_arrow(column_names, table)
+    arrow_table, schema = to_arrow(column_names, table)
     pq.write_table(arrow_table, filename)
 
-    return None
+    return schema
+
+
+def read_parquet(filename: str, schema):
+    arrow_table = pq.read_table(filename, schema=schema)
+    return from_arrow(arrow_table)
 
 
 def write_csv(filename: str, column_names: list[str], table: list[tuple]):
-    arrow_table = to_arrow(column_names, table)
+    arrow_table, schema = to_arrow(column_names, table)
+    convert_options = csv.ConvertOptions(
+        column_types={field.name: field.type for field in schema},
+        strings_can_be_null=True,
+    )
+
     csv.write_csv(arrow_table, filename)
+    return convert_options
 
 
-# Pandas
-# security_master_pd = pd.DataFrame(
-#     security_master,
-#     columns=["security_id", "effective_start_date", "effective_end_date", *attributes],
-# )
+def read_csv(filename: str, convert_options):
+    arrow_table = csv.read_csv(filename, convert_options=convert_options)
+    return from_arrow(arrow_table)

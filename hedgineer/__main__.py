@@ -1,12 +1,16 @@
-import pyarrow as pa
-
-from .core import (
-    extract_attributes,
-    generate_security_master,
-    join_positions,
-)
-from .io import format_table, to_arrow, from_arrow, to_pandas, write_parquet, write_csv
+from .core import extract_attributes, generate_security_master, join_positions
 from .globals import ATTRIBUTE_PRIORITY, AUDIT_TRAIL, POSITIONS_TABLE
+from .io import (
+    format_table,
+    from_arrow,
+    from_pandas,
+    read_csv,
+    read_parquet,
+    to_arrow,
+    to_pandas,
+    write_csv,
+    write_parquet,
+)
 
 attributes, attribute_index = extract_attributes(AUDIT_TRAIL, ATTRIBUTE_PRIORITY)
 sm_header, security_master = generate_security_master(AUDIT_TRAIL, ATTRIBUTE_PRIORITY)
@@ -14,15 +18,32 @@ jp_header, joined_positions = join_positions(
     attributes, security_master, POSITIONS_TABLE
 )
 
-arrow_table = to_arrow(
-    sm_header,
-    security_master,
-)
+# arrow_table, schema = to_arrow(sm_header, security_master)
+# converted_header, converted_table = from_arrow(arrow_table)
+# assert sm_header == converted_header
+# assert security_master == converted_table
 
-converted_header, converted_table = from_arrow(arrow_table)
 
-# write_parquet("./data/security_master.parquet", sm_header, security_master)
-# write_csv("./data/security_master.csv", sm_header, security_master)
+# df, schema = to_pandas(sm_header, security_master)
+# converted_header, converted_table = from_pandas(df, schema)
+# assert sm_header == converted_header
+# assert security_master == converted_table
+
+
+# schema = write_parquet("./data/security_master.parquet", sm_header, security_master)
+# converted_header, converted_table = read_parquet(
+#     "./data/security_master.parquet", schema
+# )
+# assert sm_header == converted_header
+# assert security_master == converted_table
+
+
+# convert_options = write_csv("./data/security_master.csv", sm_header, security_master)
+# converted_header, converted_table = read_csv(
+#     "./data/security_master.csv", convert_options
+# )
+# assert sm_header == converted_header
+# assert security_master == converted_table
 
 # print(
 #     format_table(
@@ -39,10 +60,6 @@ converted_header, converted_table = from_arrow(arrow_table)
 #         converted_table,
 #     )
 # )
-
-assert sm_header == converted_header
-assert security_master == converted_table
-
 
 # print(
 #     format_table(
