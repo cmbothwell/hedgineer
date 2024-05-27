@@ -29,7 +29,12 @@ def parse_data_type(column):
         map(lambda x: type(x), (filter(lambda x: x is not None, column)))
     )
 
-    if len(column_types) != 1:
+    if len(column_types) == 0:
+        raise Exception(
+            "Could not parse column for Arrow conversion: no elements provided"
+        )
+
+    if len(column_types) > 1:
         raise Exception(
             "Could not parse column for Arrow conversion: more than 1 data type present in column"
         )
@@ -38,11 +43,11 @@ def parse_data_type(column):
 
     if column_type is int:
         return pa.int64()
-    if column_type is float:
+    elif column_type is float:
         return pa.float64()
-    if column_type is str:
+    elif column_type is str:
         return pa.string()
-    if column_type is date:
+    elif column_type is date:
         return pa.date32()
 
     raise Exception("Could not parse column for Arrow conversion: data type not found")
@@ -79,31 +84,31 @@ def from_pandas(df, schema):
     return from_arrow(arrow_table)
 
 
-def write_parquet(filename: str, column_names: list[str], table: list[tuple]):
+def write_parquet(where, column_names: list[str], table: list[tuple]):
     arrow_table, schema = to_arrow(column_names, table)
-    pq.write_table(arrow_table, filename)
+    pq.write_table(arrow_table, where)
 
-    return schema
+    return where, schema
 
 
-def read_parquet(filename: str, schema):
-    arrow_table = pq.read_table(filename, schema=schema)
+def read_parquet(where, schema):
+    arrow_table = pq.read_table(where, schema=schema)
     return from_arrow(arrow_table)
 
 
-def write_csv(filename: str, column_names: list[str], table: list[tuple]):
+def write_csv(where, column_names: list[str], table: list[tuple]):
     arrow_table, schema = to_arrow(column_names, table)
     convert_options = csv.ConvertOptions(
         column_types={field.name: field.type for field in schema},
         strings_can_be_null=True,
     )
 
-    csv.write_csv(arrow_table, filename)
-    return convert_options
+    csv.write_csv(arrow_table, where)
+    return where, convert_options
 
 
-def read_csv(filename: str, convert_options):
-    arrow_table = csv.read_csv(filename, convert_options=convert_options)
+def read_csv(where, convert_options):
+    arrow_table = csv.read_csv(where, convert_options=convert_options)
     return from_arrow(arrow_table)
 
 
@@ -150,4 +155,5 @@ def read_sql(engine, metadata, table_name, schema):
     with engine.connect() as conn:
         rows = list(conn.execute(select(table)))
 
-    return to_arrow_with_schema(rows, schema)
+    arrow_table, schema = to_arrow_with_schema(rows, schema)
+    return from_arrow(arrow_table)
