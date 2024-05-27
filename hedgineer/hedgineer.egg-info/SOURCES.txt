@@ -1,0 +1,5 @@
+setup.py
+hedgineer.egg-info/PKG-INFO
+hedgineer.egg-info/SOURCES.txt
+hedgineer.egg-info/dependency_links.txt
+hedgineer.egg-info/top_level.txt
