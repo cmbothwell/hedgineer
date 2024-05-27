@@ -11,6 +11,14 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 import pyarrow.csv as csv
 
+from core import (
+    bucket_fact,
+    deeply_spread,
+    accumulate_fact,
+    join_position,
+    get_pretty_table,
+)
+
 pp = PrettyPrinter()
 
 parse_date = lambda x: datetime.strptime(x, "%m/%d/%y")
@@ -47,87 +55,6 @@ POSITIONS_TABLE = [
 ]
 
 
-def deeply_spread(dd):
-    result = []
-
-    for k, v in dd.items():
-        if isinstance(v, dict):
-            result.extend(map(lambda k_: (k, *k_), deeply_spread(v)))
-        else:
-            result.append((k, v))
-
-    return result
-
-
-def bucket_fact(bucket, fact):
-    security_id, attribute_key, value, effective_date = fact
-
-    bucket.setdefault(security_id, {effective_date: []}).setdefault(
-        effective_date, []
-    ).append((attribute_key, value))
-
-    return bucket
-
-
-def accumulate_fact(
-    security_master__attributes__attribute_index: list[list[Any]], flat_fact: tuple
-):
-    security_master, attributes, attribute_index = (
-        security_master__attributes__attribute_index
-    )
-    security_id, effective_date, facts = flat_fact
-    new_security = len(security_master) == 0 or security_master[-1][0] != security_id
-
-    if new_security:
-        row = [
-            security_id,
-            effective_date,
-            None,
-            *map(lambda _: None, range(len(attributes))),
-        ]
-    else:
-        row = list(security_master[-1])
-
-    # Set date range
-    row[1], row[2] = effective_date, None
-
-    # Add new facts that diff from prior row
-    for key, value in facts:
-        row[3 + attribute_index[key]] = value
-
-    # Don't forget to modify the last row's effective end date if needed
-    if not new_security:
-        security_master[-1] = tuple(
-            (*security_master[-1][:2], effective_date, *security_master[-1][3:])
-        )
-
-    security_master.append(tuple(row))
-    return (security_master, attributes, attribute_index)
-
-
-def get_pretty_table(table) -> str:
-    s = [[str(e) for e in row] for row in table]
-    lens = [max(map(len, col)) for col in zip(*s)]
-    fmt = "\t".join("{{:{0}}}".format(x) for x in lens)
-    pretty_table = [fmt.format(*row) for row in s]
-    return "\n".join(pretty_table)
-
-
-def join_position(security_master: list[tuple], position: tuple) -> tuple:
-    security_id, quantity, date = position
-    try:
-        master_row = next(
-            filter(
-                lambda x: x[0] == security_id and x[1] <= date and x[2] > date,
-                security_master,
-            )
-        )
-    except StopIteration:
-        return []
-
-    return tuple((security_id, quantity, date, *master_row[3:]))
-
-
 attributes = sorted(
     dict.fromkeys(map(lambda raw_fact: raw_fact[1], AUDIT_TRAIL)),
     key=lambda x: ATTRIBUTE_PRIORITY.get(x, float("inf")),
@@ -146,17 +73,29 @@ formatted_security_master = [
     for t in security_master
 ]
 header = [["security_id", "effective_start_date", "effective_end_date", *attributes]]
-# print("Security Master")
-# print(get_pretty_table([*header, *formatted_security_master]), "\n")
+print("Security Master")
+print(get_pretty_table([*header, *formatted_security_master]), "\n")
+
+
+joined_table = [
+    join_position(security_master, position) for position in POSITIONS_TABLE
+]
+formatted_joined_table = [
+    tuple(format_date(v) if isinstance(v, datetime) else v for v in t)
+    for t in security_master
+]
+join_header = [["security_id", "quantity", "date", *attributes]]
+print("Consolidated Position Information")
+print(get_pretty_table([*join_header, *formatted_joined_table]), "\n")
 
 # Pandas
-security_master_pd = pd.DataFrame(
-    security_master,
-    columns=["security_id", "effective_start_date", "effective_end_date", *attributes],
-)
+# security_master_pd = pd.DataFrame(
+#     security_master,
+#     columns=["security_id", "effective_start_date", "effective_end_date", *attributes],
+# )
 
-security_master_pd_copy = security_master_pd.copy(deep=True)
-assert security_master_pd.equals(security_master_pd_copy)
+# security_master_pd_copy = security_master_pd.copy(deep=True)
+# assert security_master_pd.equals(security_master_pd_copy)
 
 # PyArrow
 # cols = list(zip(*security_master))
@@ -191,40 +130,3 @@ assert security_master_pd.equals(security_master_pd_copy)
 
 # csv.write_csv(reloaded_table, "security_master.csv")
 # reloaded_table = csv.read_csv("security_master.csv")
-
-
-joined_table = [
-    join_position(security_master, position) for position in POSITIONS_TABLE
-]
-formatted_joined_table = [
-    tuple(format_date(v) if isinstance(v, datetime) else v for v in t)
-    for t in security_master
-]
-join_header = [["security_id", "quantity", "date", *attributes]]
-# print("Consolidated Position Information")
-# print(get_pretty_table([*join_header, *formatted_joined_table]), "\n")
-
-
-# Scratchpad
-
-# formatted_sorted_flat_facts = [
-#     [format_date(val) if isinstance(val, datetime) else val for val in flat_fact]
-#     for flat_fact in sorted_flat_facts
-# ]
-
-# flat_facts: list[tuple] = [
-#     (security_id, date, facts)
-#     for security_id, facts_by_date in bucketed_facts.items()
-#     for date, facts in facts_by_date.items()
-# ]
-
-
-# def deeply_spread_(dd):
-#     result_primitives = [(k, v) for k, v in dd.items() if not isinstance(v, dict)]
-#     result_dicts = [
-#         x
-#         for k, v in dd.items()
-#         if isinstance(v, dict)
-#         for x in map(lambda k_: (k, *k_), deeply_spread(v))
-#     ]
-#     return [*result_dicts, *result_primitives]
