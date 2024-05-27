@@ -59,12 +59,14 @@ def accumulate_fact(
     return (security_master, attributes, attribute_index)
 
 
-def get_pretty_table(table) -> str:
-    s = [[str(e) for e in row] for row in table]
-    lens = [max(map(len, col)) for col in zip(*s)]
-    fmt = "\t".join("{{:{0}}}".format(x) for x in lens)
-    pretty_table = [fmt.format(*row) for row in s]
-    return "\n".join(pretty_table)
+def extract_attributes(audit_trail, attribute_priority):
+    attributes = sorted(
+        dict.fromkeys(map(lambda raw_fact: raw_fact[1], audit_trail)),
+        key=lambda x: attribute_priority.get(x, float("inf")),
+    )
+    attribute_index = {v: i for i, v in enumerate(attributes)}
+
+    return attributes, attribute_index
 
 
 def join_position(security_master: list[tuple], position: tuple) -> tuple:
@@ -80,6 +82,14 @@ def join_position(security_master: list[tuple], position: tuple) -> tuple:
         return []
 
     return tuple((security_id, quantity, date, *master_row[3:]))
+
+
+def get_pretty_table(table) -> str:
+    s = [[str(e) for e in row] for row in table]
+    lens = [max(map(len, col)) for col in zip(*s)]
+    fmt = "\t".join("{{:{0}}}".format(x) for x in lens)
+    pretty_table = [fmt.format(*row) for row in s]
+    return "\n".join(pretty_table)
 
 
 # Scratchpad

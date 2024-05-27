@@ -1,7 +1,6 @@
 from datetime import datetime
 from functools import reduce
 from operator import itemgetter
-from typing import Any
 from pprint import PrettyPrinter
 
 import numpy as np
@@ -11,55 +10,21 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 import pyarrow.csv as csv
 
+from .globals import AUDIT_TRAIL, ATTRIBUTE_PRIORITY, POSITIONS_TABLE
 from .core import (
-    bucket_fact,
     deeply_spread,
+    bucket_fact,
+    extract_attributes,
     accumulate_fact,
     join_position,
     get_pretty_table,
 )
+from .utils import format_date
 
 pp = PrettyPrinter()
 
-parse_date = lambda x: datetime.strptime(x, "%m/%d/%y")
-format_date = lambda x: datetime.strftime(x, "%m/%d/%y")
 
-ATTRIBUTE_PRIORITY = {
-    "asset_class": 0,
-    "ticker": 1,
-    "name": 2,
-}
-
-AUDIT_TRAIL: list[tuple] = [
-    (1, "ticker", "LENZ", parse_date("03/22/24")),
-    (2, "market_cap", 549000, parse_date("05/23/24")),
-    (1, "gics_sector", "healthcare", parse_date("01/01/24")),
-    (1, "ticker", "GRPH", parse_date("01/01/24")),
-    (1, "name", "Lenz Therapeutics, Inc", parse_date("03/22/24")),
-    (2, "ticker", "V", parse_date("01/01/23")),
-    (1, "gics_industry", "biotechnology", parse_date("01/01/24")),
-    (2, "gics_sector", "technology", parse_date("01/01/23")),
-    (1, "asset_class", "equity", parse_date("01/01/24")),
-    (1, "name", "Graphite bio", parse_date("01/01/24")),
-    (2, "gics_sector", "financials", parse_date("03/17/23")),
-    (1, "market_cap", 400, parse_date("05/23/24")),
-]
-
-
-POSITIONS_TABLE = [
-    (1, 100, datetime(2024, 2, 1)),
-    (1, 105, datetime(2024, 2, 1)),
-    (2, 150, datetime(2024, 2, 1)),
-    (1, 120, datetime(2024, 3, 1)),
-    (2, 140, datetime(2024, 3, 1)),
-]
-
-
-attributes = sorted(
-    dict.fromkeys(map(lambda raw_fact: raw_fact[1], AUDIT_TRAIL)),
-    key=lambda x: ATTRIBUTE_PRIORITY.get(x, float("inf")),
-)
-attribute_index = {v: i for i, v in enumerate(attributes)}
+attributes, attribute_index = extract_attributes(AUDIT_TRAIL, ATTRIBUTE_PRIORITY)
 
 bucketed_facts: dict[str, dict[str, list]] = reduce(bucket_fact, AUDIT_TRAIL, {})
 flat_facts: list[tuple] = deeply_spread(bucketed_facts)
