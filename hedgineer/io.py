@@ -1,9 +1,10 @@
 from datetime import date
 
-import pandas as pd
 import pyarrow as pa
 import pyarrow.csv as csv
 import pyarrow.parquet as pq
+from sqlalchemy import Column, Date, Float, Integer, String, Table, insert, select
+from sqlalchemy.schema import CreateTable
 
 from .utils import format_date
 
@@ -48,23 +49,21 @@ def parse_data_type(column):
 
 
 def to_arrow(column_names: list[str], table: list[tuple]):
-    if len(table) == 0:
-        return None
-
     raw_columns = list(zip(*table))
-    data_types = [parse_data_type(raw_column) for raw_column in raw_columns]
+    data_types = map(parse_data_type, raw_columns)
     schema = pa.schema(list(zip(column_names, data_types)))
 
     return pa.table(raw_columns, schema=schema), schema
 
 
+def to_arrow_with_schema(table: list[tuple], schema):
+    raw_columns = list(zip(*table))
+    return pa.table(raw_columns, schema=schema), schema
+
+
 def from_arrow(arrow_table):
     py_table = arrow_table.to_pylist()
-
-    if len(py_table) == 0:
-        return None, None
-
-    header = [k for k in py_table[0].keys()]
+    header = [k for k in py_table[0].keys()] if len(py_table) > 0 else []
     table = [tuple(v for v in row.values()) for row in py_table]
 
     return header, table
@@ -106,3 +105,49 @@ def write_csv(filename: str, column_names: list[str], table: list[tuple]):
 def read_csv(filename: str, convert_options):
     arrow_table = csv.read_csv(filename, convert_options=convert_options)
     return from_arrow(arrow_table)
+
+
+def map_field_to_sql_column(field):
+    if field.type == pa.int64():
+        column_type = Integer
+    elif field.type == pa.float64():
+        column_type = Float
+    elif field.type == pa.string():
+        column_type = String
+    elif field.type == pa.date32():
+        column_type = Date
+    else:
+        raise Exception("Could not determine column type from Arrow schema")
+
+    if field.name == "security_id" or field.name == "effective_start_date":
+        return Column(field.name, column_type, primary_key=True)
+    else:
+        return Column(field.name, column_type, nullable=True)
+
+
+def write_sql(
+    engine,
+    metadata,
+    table_name: str,
+    column_names: list[str],
+    table: list[tuple],
+):
+    arrow_table, schema = to_arrow(column_names, table)
+    columns = list(map(map_field_to_sql_column, schema))
+    sql_table = Table(table_name, metadata, *columns)
+
+    with engine.connect() as conn:
+        conn.execute(CreateTable(sql_table, if_not_exists=True))
+        conn.execute(insert(sql_table).values(arrow_table.to_pylist()))
+        conn.commit()
+
+    return metadata, schema
+
+
+def read_sql(engine, metadata, table_name, schema):
+    table = metadata.tables[table_name]
+
+    with engine.connect() as conn:
+        rows = list(conn.execute(select(table)))
+
+    return to_arrow_with_schema(rows, schema)

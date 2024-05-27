@@ -1,3 +1,5 @@
+from sqlalchemy import MetaData, create_engine
+
 from .core import extract_attributes, generate_security_master, join_positions
 from .globals import ATTRIBUTE_PRIORITY, AUDIT_TRAIL, POSITIONS_TABLE
 from .io import (
@@ -6,10 +8,12 @@ from .io import (
     from_pandas,
     read_csv,
     read_parquet,
+    read_sql,
     to_arrow,
     to_pandas,
     write_csv,
     write_parquet,
+    write_sql,
 )
 
 attributes, attribute_index = extract_attributes(AUDIT_TRAIL, ATTRIBUTE_PRIORITY)
@@ -17,6 +21,15 @@ sm_header, security_master = generate_security_master(AUDIT_TRAIL, ATTRIBUTE_PRI
 jp_header, joined_positions = join_positions(
     attributes, security_master, POSITIONS_TABLE
 )
+
+engine = create_engine("sqlite:///:memory:", echo=True)
+metadata = MetaData()
+
+metadata, schema = write_sql(
+    engine, metadata, "security_master", sm_header, security_master
+)
+arrow_table, schema = read_sql(engine, metadata, "security_master", schema)
+
 
 # arrow_table, schema = to_arrow(sm_header, security_master)
 # converted_header, converted_table = from_arrow(arrow_table)
