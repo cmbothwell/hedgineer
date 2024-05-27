@@ -10,7 +10,7 @@ from .core import (
     flatten_and_sort_facts,
     format_table,
     generate_security_master,
-    join_position,
+    join_positions,
 )
 from .globals import ATTRIBUTE_PRIORITY, AUDIT_TRAIL, POSITIONS_TABLE
 
@@ -20,9 +20,7 @@ sorted_flat_facts = flatten_and_sort_facts(bucketed_facts)
 security_master = generate_security_master(
     sorted_flat_facts, attributes, attribute_index
 )
-joined_table = [
-    join_position(security_master, position) for position in POSITIONS_TABLE
-]
+joined_positions = join_positions(security_master, POSITIONS_TABLE)
 
 print(
     format_table(
@@ -36,6 +34,6 @@ print(
     format_table(
         "Consolidated Position Information",
         ["security_id", "quantity", "date", *attributes],
-        joined_table,
+        joined_positions,
     )
 )

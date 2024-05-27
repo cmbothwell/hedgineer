@@ -104,6 +104,10 @@ def join_position(security_master: list[tuple], position: tuple) -> tuple:
     return tuple((security_id, quantity, date, *master_row[3:]))
 
 
+def join_positions(security_master: list[tuple], positions_table: list[tuple]):
+    return [join_position(security_master, position) for position in positions_table]
+
+
 def get_pretty_table(table) -> str:
     s = [[str(e) for e in row] for row in table]
     lens = [max(map(len, col)) for col in zip(*s)]

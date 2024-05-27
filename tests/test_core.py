@@ -2,14 +2,27 @@ from datetime import datetime
 
 from pytest import fixture
 
-from hedgineer.core import bucket_fact, bucket_facts, deeply_spread, extract_attributes
-from hedgineer.globals import ATTRIBUTE_PRIORITY, AUDIT_TRAIL
+from hedgineer.core import (
+    bucket_fact,
+    bucket_facts,
+    deeply_spread,
+    extract_attributes,
+    flatten_and_sort_facts,
+    generate_security_master,
+    join_positions,
+)
+from hedgineer.globals import ATTRIBUTE_PRIORITY, AUDIT_TRAIL, POSITIONS_TABLE
 from hedgineer.utils import parse_date
 
 
 @fixture
 def audit_trail():
     return AUDIT_TRAIL
+
+
+@fixture
+def positions_table():
+    return POSITIONS_TABLE
 
 
 @fixture
@@ -24,6 +37,22 @@ def nested_dict():
             "2": {"x": 0, "y": [1, 2]},
         },
     }
+
+
+@fixture
+def bucketed_facts(audit_trail):
+    return bucket_facts(audit_trail)
+
+
+@fixture
+def sorted_flat_facts(bucketed_facts):
+    return flatten_and_sort_facts(bucketed_facts)
+
+
+@fixture
+def security_master(sorted_flat_facts):
+    attributes, attribute_index = extract_attributes(AUDIT_TRAIL, ATTRIBUTE_PRIORITY)
+    return generate_security_master(sorted_flat_facts, attributes, attribute_index)
 
 
 def test_deeply_spread(nested_dict):
@@ -77,8 +106,165 @@ def test_bucket_fact():
     }
 
 
-def test_join_position():
-    pass
+def test_flatten_and_sort_facts(bucketed_facts):
+    assert flatten_and_sort_facts(bucketed_facts) == [
+        (
+            1,
+            datetime(2024, 1, 1, 0, 0),
+            [
+                ("gics_sector", "healthcare"),
+                ("ticker", "GRPH"),
+                ("gics_industry", "biotechnology"),
+                ("asset_class", "equity"),
+                ("name", "Graphite bio"),
+            ],
+        ),
+        (
+            1,
+            datetime(2024, 3, 22, 0, 0),
+            [("ticker", "LENZ"), ("name", "Lenz Therapeutics, Inc")],
+        ),
+        (1, datetime(2024, 5, 23, 0, 0), [("market_cap", 400)]),
+        (
+            2,
+            datetime(2023, 1, 1, 0, 0),
+            [("ticker", "V"), ("gics_sector", "technology")],
+        ),
+        (2, datetime(2023, 3, 17, 0, 0), [("gics_sector", "financials")]),
+        (2, datetime(2024, 5, 23, 0, 0), [("market_cap", 549000)]),
+    ]
+
+
+def test_generate_security_master(sorted_flat_facts):
+    attributes, attribute_index = extract_attributes(AUDIT_TRAIL, ATTRIBUTE_PRIORITY)
+    assert generate_security_master(sorted_flat_facts, attributes, attribute_index) == [
+        (
+            1,
+            datetime(2024, 1, 1, 0, 0),
+            datetime(2024, 3, 22, 0, 0),
+            "equity",
+            "GRPH",
+            "Graphite bio",
+            None,
+            "healthcare",
+            "biotechnology",
+        ),
+        (
+            1,
+            datetime(2024, 3, 22, 0, 0),
+            datetime(2024, 5, 23, 0, 0),
+            "equity",
+            "LENZ",
+            "Lenz Therapeutics, Inc",
+            None,
+            "healthcare",
+            "biotechnology",
+        ),
+        (
+            1,
+            datetime(2024, 5, 23, 0, 0),
+            None,
+            "equity",
+            "LENZ",
+            "Lenz Therapeutics, Inc",
+            400,
+            "healthcare",
+            "biotechnology",
+        ),
+        (
+            2,
+            datetime(2023, 1, 1, 0, 0),
+            datetime(2023, 3, 17, 0, 0),
+            None,
+            "V",
+            None,
+            None,
+            "technology",
+            None,
+        ),
+        (
+            2,
+            datetime(2023, 3, 17, 0, 0),
+            datetime(2024, 5, 23, 0, 0),
+            None,
+            "V",
+            None,
+            None,
+            "financials",
+            None,
+        ),
+        (
+            2,
+            datetime(2024, 5, 23, 0, 0),
+            None,
+            None,
+            "V",
+            None,
+            549000,
+            "financials",
+            None,
+        ),
+    ]
+
+
+def test_join_positions(security_master, positions_table):
+    assert join_positions(security_master, positions_table) == [
+        (
+            1,
+            100,
+            datetime(2024, 2, 1, 0, 0),
+            "equity",
+            "GRPH",
+            "Graphite bio",
+            None,
+            "healthcare",
+            "biotechnology",
+        ),
+        (
+            1,
+            105,
+            datetime(2024, 2, 1, 0, 0),
+            "equity",
+            "GRPH",
+            "Graphite bio",
+            None,
+            "healthcare",
+            "biotechnology",
+        ),
+        (
+            2,
+            150,
+            datetime(2024, 2, 1, 0, 0),
+            None,
+            "V",
+            None,
+            None,
+            "financials",
+            None,
+        ),
+        (
+            1,
+            120,
+            datetime(2024, 3, 1, 0, 0),
+            "equity",
+            "GRPH",
+            "Graphite bio",
+            None,
+            "healthcare",
+            "biotechnology",
+        ),
+        (
+            2,
+            140,
+            datetime(2024, 3, 1, 0, 0),
+            None,
+            "V",
+            None,
+            None,
+            "financials",
+            None,
+        ),
+    ]
 
 
 def test_extract_attributes():
