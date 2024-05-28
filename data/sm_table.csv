@@ -1,7 +1,0 @@
-"security_id","effective_start_date","effective_end_date","asset_class","ticker","name","market_cap","gics_sector","gics_industry"
-1,2024-01-01,2024-03-22,"equity","GRPH","Graphite bio",,"healthcare","biotechnology"
-1,2024-03-22,2024-05-23,"equity","LENZ","Lenz Therapeutics, Inc",,"healthcare","biotechnology"
-1,2024-05-23,,"equity","LENZ","Lenz Therapeutics, Inc",400,"healthcare","biotechnology"
-2,2023-01-01,2023-03-17,,"V",,,"technology",
-2,2023-03-17,2024-05-23,,"V",,,"financials",
-2,2024-05-23,,,"V",,549000,"financials",

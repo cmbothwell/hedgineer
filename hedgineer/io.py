@@ -1,3 +1,4 @@
+import csv as pycsv
 from datetime import date
 
 import pyarrow as pa
@@ -6,8 +7,26 @@ import pyarrow.parquet as pq
 from sqlalchemy import Column, Date, Float, Integer, String, Table, insert, select
 from sqlalchemy.schema import CreateTable
 
-from .types import JoinedPositions, SecurityMaster
-from .utils import format_date
+from .types import AuditTrail, JoinedPositions, SecurityMaster
+from .utils import format_date, parse_date
+
+
+def read_audit_trail(path) -> AuditTrail:
+    audit_trail = []
+
+    with open(path, mode="r", newline="\n") as f:
+        csv_reader = pycsv.reader(
+            f,
+            quotechar='"',
+            delimiter=",",
+            quoting=pycsv.QUOTE_ALL,
+            skipinitialspace=True,
+        )
+        _ = next(csv_reader)  # discard the header
+        for row in csv_reader:
+            audit_trail.append(row)
+
+    return [[int(row[0]), row[1], row[2], parse_date(row[3])] for row in audit_trail]
 
 
 def get_pretty_table(table: list[tuple]):
