@@ -2,14 +2,14 @@ from .collect import diff_row, generate_empty_row
 from .utils import replace_at_index
 
 
-def get_value_diffs(current_row, facts, attribute_index):
+def get_value_diffs(current_row, kv_pairs, attribute_index):
     return [
         (
             attribute_index[attribute] + 3,
             current_row[attribute_index[attribute] + 3],
             value,
         )
-        for attribute, value in facts
+        for attribute, value in kv_pairs
     ]
 
 
@@ -27,6 +27,8 @@ def cascade_new_values(table, security_id, starting_index, value_diffs):
 
         table[i] = row
 
+    return table
+
 
 def insert_new_security(sm_table, flat_fact, attributes, attribute_index):
     security_id, d, kv_pairs = flat_fact
@@ -39,14 +41,18 @@ def insert_new_security(sm_table, flat_fact, attributes, attribute_index):
         kv_pairs,
     )
 
-    for i, row in enumerate(sm_table):
-        s_id, *_ = row
-        insertion_index = i
+    if security_id > max(row[0] for row in sm_table):
+        sm_table.append(new_row)
+    else:
+        for i, row in enumerate(sm_table):
+            s_id, *_ = row
+            insertion_index = i
 
-        if s_id > security_id:
-            break
+            if s_id > security_id:
+                break
+        sm_table.insert(insertion_index, new_row)
 
-    sm_table.insert(insertion_index, new_row)
+    return sm_table
 
 
 def insert_before(
@@ -67,7 +73,7 @@ def insert_before(
     sm_table.insert(new_index, new_row)
 
     value_diffs = get_value_diffs(new_row, kv_pairs, attribute_index)
-    cascade_new_values(sm_table, security_id, new_index, value_diffs)
+    return cascade_new_values(sm_table, security_id, new_index, value_diffs)
 
 
 def insert_after(sm_table, row_to_insert_after, flat_fact, _, attribute_index):
@@ -87,6 +93,7 @@ def insert_after(sm_table, row_to_insert_after, flat_fact, _, attribute_index):
 
     # Insert new row
     sm_table.insert(prior_index + 1, new_row)
+    return sm_table
 
 
 def merge_into_row(sm_table, row_to_merge_into, flat_fact, _, attribute_index):
@@ -94,7 +101,7 @@ def merge_into_row(sm_table, row_to_merge_into, flat_fact, _, attribute_index):
     row_to_merge_index = sm_table.index(row_to_merge_into)
 
     value_diffs = get_value_diffs(row_to_merge_into, kv_pairs, attribute_index)
-    cascade_new_values(sm_table, security_id, row_to_merge_index, value_diffs)
+    return cascade_new_values(sm_table, security_id, row_to_merge_index, value_diffs)
 
 
 def split_row(sm_table, row_to_split, flat_fact, _, attribute_index):
@@ -112,7 +119,7 @@ def split_row(sm_table, row_to_split, flat_fact, _, attribute_index):
     sm_table.insert(split_index + 1, new_row)  # Insert the new row
 
     value_diffs = get_value_diffs(new_row, kv_pairs, attribute_index)
-    cascade_new_values(sm_table, security_id, split_index + 1, value_diffs)
+    return cascade_new_values(sm_table, security_id, split_index + 1, value_diffs)
 
 
 def merge_flat_fact(sm_table, flat_fact, attributes, attribute_index):
@@ -120,25 +127,20 @@ def merge_flat_fact(sm_table, flat_fact, attributes, attribute_index):
     security_rows = list(filter(lambda x: x[0] == security_id, sm_table))
 
     if len(security_rows) == 0:
-        # print("Empty case")
-        insert_new_security(sm_table, flat_fact, attributes, attribute_index)
+        return insert_new_security(sm_table, flat_fact, attributes, attribute_index)
     elif d < security_rows[0][1]:
-        # print("Before case")
-        insert_before(
+        return insert_before(
             sm_table, security_rows[0], flat_fact, attributes, attribute_index
         )
     elif d > security_rows[-1][1]:
-        # print("After case")
-        insert_after(
+        return insert_after(
             sm_table, security_rows[-1], flat_fact, attributes, attribute_index
         )
     elif any(map(lambda x: x[1] == d, security_rows)):
-        # print("Merge case")
         row_to_merge_into = next(row for row in security_rows if row[1] == d)
-        merge_into_row(
+        return merge_into_row(
             sm_table, row_to_merge_into, flat_fact, attributes, attribute_index
         )
     else:
-        # print("Split case")
         row_to_split = next(row for row in security_rows if row[1] <= d < row[2])
-        split_row(sm_table, row_to_split, flat_fact, attributes, attribute_index)
+        return split_row(sm_table, row_to_split, flat_fact, attributes, attribute_index)
