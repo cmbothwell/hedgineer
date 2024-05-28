@@ -171,8 +171,11 @@ def join_positions(sm: SecurityMaster, positions_table: list[tuple]) -> JoinedPo
         if attr not in ["security_id", "effective_start_date", "effective_end_date"]
     ]
     header = ["security_id", "quantity", "date", *attributes]
-    joined_positions = [
-        join_position(sm, attributes, position) for position in positions_table
-    ]
+    joined_positions = list(
+        filter(
+            lambda x: x != [],
+            [join_position(sm, attributes, position) for position in positions_table],
+        )
+    )
 
     return JoinedPositions.from_tuple((header, joined_positions))

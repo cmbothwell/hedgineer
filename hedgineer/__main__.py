@@ -33,20 +33,24 @@ if __name__ == "__main__":
     print(format_sm(sm, "Security Master"))
 
     if args.merge:
-        sm = merge_audit_trail_update(sm, AUDIT_TRAIL_UPDATE, ATTRIBUTE_PRIORITY)
+        audit_trail_update_path = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)),
+            "..",
+            "data",
+            "audit_trail_update.csv",
+        )
+        audit_trail_update = read_audit_trail(audit_trail_update_path)
+
+        sm = merge_audit_trail_update(sm, audit_trail_update, ATTRIBUTE_PRIORITY)
         print(format_sm(sm, "Security Master after Merge"))
 
     if args.filter:
         if args.filter.strip().lower() == "none":
-            sm_filtered = filter_by_asset_class(sm, None)
-            print(
-                format_sm(sm_filtered, f"Security Master (asset_class: {args.filter})")
-            )
+            sm = filter_by_asset_class(sm, None)
+            print(format_sm(sm, f"Security Master (asset_class: {args.filter})"))
         else:
-            sm_filtered = filter_by_asset_class(sm, args.filter)
-            print(
-                format_sm(sm_filtered, f"Security Master (asset_class: {args.filter})")
-            )
+            sm = filter_by_asset_class(sm, args.filter)
+            print(format_sm(sm, f"Security Master (asset_class: {args.filter})"))
 
     if args.positions:
         jp = join_positions(sm, POSITIONS_TABLE)

@@ -45,6 +45,9 @@ def format_sm(
         tuple(format_date(v) if isinstance(v, date) else v for v in t) for t in sm.data
     ]
 
+    if len(table) == 0:
+        return "No securities available\n"
+
     return title + "\n" + get_pretty_table([sm.header, *table]) + "\n"
 
 
@@ -55,6 +58,9 @@ def format_jp(
     table = [
         tuple(format_date(v) if isinstance(v, date) else v for v in t) for t in jp.data
     ]
+
+    if len(table) == 0:
+        return "No positions available\n"
 
     return title + "\n" + get_pretty_table([jp.header, *table]) + "\n"
 
