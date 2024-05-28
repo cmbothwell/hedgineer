@@ -25,9 +25,7 @@ def format_table(title, header, table) -> str:
 
 
 def parse_data_type(column):
-    column_types = set(
-        map(lambda x: type(x), (filter(lambda x: x is not None, column)))
-    )
+    column_types = set(map(lambda x: type(x), filter(lambda x: x is not None, column)))
 
     if len(column_types) == 0:
         raise Exception(

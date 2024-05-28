@@ -9,7 +9,7 @@ from hedgineer.collect import (
     generate_security_master,
     join_positions,
 )
-from hedgineer.globals import ATTRIBUTE_PRIORITY, AUDIT_TRAIL, POSITIONS_TABLE
+from hedgineer.globals import ATTRIBUTE_PRIORITY, TEST_AUDIT_TRAIL, POSITIONS_TABLE
 from hedgineer.io import (
     from_arrow,
     from_pandas,
@@ -27,7 +27,7 @@ from hedgineer.io import (
 
 @fixture
 def audit_trail():
-    return AUDIT_TRAIL
+    return TEST_AUDIT_TRAIL
 
 
 @fixture
@@ -42,12 +42,12 @@ def positions_table():
 
 @fixture
 def attributes():
-    return extract_attributes(AUDIT_TRAIL, ATTRIBUTE_PRIORITY)
+    return extract_attributes(TEST_AUDIT_TRAIL, ATTRIBUTE_PRIORITY)
 
 
 @fixture
 def security_master():
-    sm_header, sm_table = generate_security_master(AUDIT_TRAIL, ATTRIBUTE_PRIORITY)
+    sm_header, sm_table = generate_security_master(TEST_AUDIT_TRAIL, ATTRIBUTE_PRIORITY)
 
     return sm_header, sm_table
 

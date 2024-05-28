@@ -3,13 +3,13 @@ from datetime import date
 from pytest import fixture
 
 from hedgineer.collect import extract_attributes
-from hedgineer.globals import ATTRIBUTE_PRIORITY, AUDIT_TRAIL
+from hedgineer.globals import ATTRIBUTE_PRIORITY, TEST_AUDIT_TRAIL
 from hedgineer.merge import cascade_new_values, get_value_diffs, merge_flat_fact
 
 
 @fixture
 def attributes():
-    return extract_attributes(AUDIT_TRAIL, ATTRIBUTE_PRIORITY)
+    return extract_attributes(TEST_AUDIT_TRAIL, ATTRIBUTE_PRIORITY)
 
 
 @fixture

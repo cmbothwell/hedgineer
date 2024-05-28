@@ -15,13 +15,13 @@ from hedgineer.collect import (
     generate_security_master_from_facts,
     join_positions,
 )
-from hedgineer.globals import ATTRIBUTE_PRIORITY, AUDIT_TRAIL, POSITIONS_TABLE
+from hedgineer.globals import ATTRIBUTE_PRIORITY, TEST_AUDIT_TRAIL, POSITIONS_TABLE
 from hedgineer.utils import parse_date
 
 
 @fixture
 def audit_trail():
-    return AUDIT_TRAIL
+    return TEST_AUDIT_TRAIL
 
 
 @fixture
@@ -50,7 +50,7 @@ def nested_dict():
 
 @fixture
 def attributes():
-    attributes, _ = extract_attributes(AUDIT_TRAIL, ATTRIBUTE_PRIORITY)
+    attributes, _ = extract_attributes(TEST_AUDIT_TRAIL, ATTRIBUTE_PRIORITY)
     return attributes
 
 
@@ -66,7 +66,9 @@ def sorted_flat_facts(bucketed_facts):
 
 @fixture
 def security_master(sorted_flat_facts):
-    attributes, attribute_index = extract_attributes(AUDIT_TRAIL, ATTRIBUTE_PRIORITY)
+    attributes, attribute_index = extract_attributes(
+        TEST_AUDIT_TRAIL, ATTRIBUTE_PRIORITY
+    )
     return generate_security_master_from_facts(
         sorted_flat_facts, attributes, attribute_index
     )
@@ -471,9 +473,11 @@ def test_join_positions(security_master, positions_table, attributes):
 
 
 def test_extract_attributes():
-    attributes, attribute_index = extract_attributes(AUDIT_TRAIL, ATTRIBUTE_PRIORITY)
+    attributes, attribute_index = extract_attributes(
+        TEST_AUDIT_TRAIL, ATTRIBUTE_PRIORITY
+    )
 
-    assert set(attributes) == set(list(zip(*AUDIT_TRAIL))[1])
+    assert set(attributes) == set(list(zip(*TEST_AUDIT_TRAIL))[1])
     for k, v in attribute_index.items():
         assert v == attributes.index(k)
         if k in ATTRIBUTE_PRIORITY:
