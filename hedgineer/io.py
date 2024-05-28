@@ -1,5 +1,6 @@
 import csv as pycsv
 from datetime import date
+from random import randint
 
 import pyarrow as pa
 import pyarrow.csv as csv
@@ -8,11 +9,18 @@ from sqlalchemy import Column, Date, Float, Integer, String, Table, insert, sele
 from sqlalchemy.schema import CreateTable
 
 from .types import AuditTrail, JoinedPositions, SecurityMaster
-from .utils import format_date, parse_date
+from .utils import format_date, parse_date, random_attribute_pair, random_day
 
 
 def generate_audit_trail(path) -> None:
-    data = [(1, "name", "ACME", "01/01/24")]
+    data = [
+        (
+            randint(0, 15),
+            *random_attribute_pair(),
+            random_day(date(2023, 1, 1), date(2023, 12, 31)),
+        )
+        for _ in range(100)
+    ]
 
     with open(path, mode="w+", newline="\n") as file:
         writer = pycsv.writer(

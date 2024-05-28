@@ -1,8 +1,16 @@
-from datetime import datetime
+from datetime import datetime, timedelta
+from random import choice, randint
 from typing import Any
 
-parse_date = lambda x: datetime.strptime(x, "%m/%d/%y").date()
-format_date = lambda x: datetime.strftime(x, "%m/%d/%y")
+from hedgineer.globals import MOCK_ATTRIBUTES
+
+
+def parse_date(x):
+    return datetime.strptime(x, "%m/%d/%y").date()
+
+
+def format_date(x):
+    return datetime.strftime(x, "%m/%d/%y")
 
 
 def replace_at_index(t: tuple, i: int, v):
@@ -23,3 +31,15 @@ def deeply_spread(dd: dict[Any, Any]):
             result.append((k, v))
 
     return result
+
+
+def random_attribute_pair():
+    key = choice(list(MOCK_ATTRIBUTES.keys()))
+    val = MOCK_ATTRIBUTES[key]()
+
+    return key, val
+
+
+def random_day(start_date, end_date):
+    delta = (end_date - start_date).days
+    return format_date(start_date + timedelta(days=randint(0, delta)))
