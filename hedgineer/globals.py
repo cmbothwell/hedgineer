@@ -13,7 +13,6 @@ AUDIT_TRAIL: list[tuple] = [
     (2, "market_cap", 549000, parse_date("05/23/24")),
     (1, "gics_sector", "healthcare", parse_date("01/01/24")),
     (1, "ticker", "GRPH", parse_date("01/01/24")),
-    # (1, "my_attribute", "A", parse_date("01/01/24")),
     (1, "name", "Lenz Therapeutics, Inc", parse_date("03/22/24")),
     (2, "ticker", "V", parse_date("01/01/23")),
     (1, "gics_industry", "biotechnology", parse_date("01/01/24")),
@@ -22,6 +21,13 @@ AUDIT_TRAIL: list[tuple] = [
     (1, "name", "Graphite bio", parse_date("01/01/24")),
     (2, "gics_sector", "financials", parse_date("03/17/23")),
     (1, "market_cap", 400, parse_date("05/23/24")),
+]
+
+AUDIT_TRAIL_UPDATE: list[tuple] = [
+    (1, "market_cap", 100, parse_date("03/01/24")),
+    (1, "gics_industry", "health sciences", parse_date("03/01/24")),
+    (1, "market_cap", 90000, parse_date("05/26/24")),
+    (2, "market_cap", 548000, parse_date("05/26/24")),
 ]
 
 POSITIONS_TABLE = [

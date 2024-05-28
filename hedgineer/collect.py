@@ -89,6 +89,11 @@ def generate_security_master_from_facts(sorted_flat_facts, attributes, attribute
     return security_master
 
 
+def generate_sorted_flat_facts(audit_trail):
+    bucketed_facts = bucket_facts(audit_trail)
+    return flatten_and_sort_facts(bucketed_facts)
+
+
 def generate_security_master(audit_trail, attribute_priority):
     attributes, attribute_index = extract_attributes(audit_trail, attribute_priority)
     bucketed_facts = bucket_facts(audit_trail)

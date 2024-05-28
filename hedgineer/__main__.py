@@ -4,13 +4,17 @@ import pyarrow as pa
 from sqlalchemy import MetaData, create_engine
 
 from .collect import (
-    diff_row,
     extract_attributes,
-    generate_empty_row,
     generate_security_master,
+    generate_sorted_flat_facts,
     join_positions,
 )
-from .globals import ATTRIBUTE_PRIORITY, AUDIT_TRAIL, POSITIONS_TABLE
+from .globals import (
+    ATTRIBUTE_PRIORITY,
+    AUDIT_TRAIL,
+    AUDIT_TRAIL_UPDATE,
+    POSITIONS_TABLE,
+)
 from .io import (
     format_table,
     from_arrow,
@@ -24,8 +28,7 @@ from .io import (
     write_parquet,
     write_sql,
 )
-from .merge import cascade_new_values, get_value_diffs, merge_flat_fact
-from .utils import replace_at_index
+from .merge import merge_flat_fact
 
 attributes, attribute_index = extract_attributes(AUDIT_TRAIL, ATTRIBUTE_PRIORITY)
 sm_header, sm_table = generate_security_master(AUDIT_TRAIL, ATTRIBUTE_PRIORITY)
@@ -52,12 +55,10 @@ print(
     )
 )
 
-new_flat_fact = (
-    1,
-    date(2024, 3, 1),
-    [("gics_sector", "new_a"), ("gics_industry", "new_b"), ("market_cap", 100)],
-)
-merge_flat_fact(sm_table, new_flat_fact, attributes, attribute_index)
+flat_facts_to_merge = generate_sorted_flat_facts(AUDIT_TRAIL_UPDATE)
+for flat_fact in flat_facts_to_merge:
+    sm_table = merge_flat_fact(sm_table, flat_fact, attributes, attribute_index)
+
 
 print(
     format_table(
