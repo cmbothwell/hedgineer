@@ -10,12 +10,12 @@ from hedgineer.collect import (
     diff_row,
     extract_header,
     flatten_and_sort_facts,
+    generate_data_from_facts,
     generate_security_master,
-    generate_sm_data_from_facts,
     join_positions,
 )
-from hedgineer.globals import ATTRIBUTE_PRIORITY, TEST_AUDIT_TRAIL, POSITIONS_TABLE
-from hedgineer.utils import parse_date, generate_none_tuple
+from hedgineer.globals import ATTRIBUTE_PRIORITY, POSITIONS_TABLE, TEST_AUDIT_TRAIL
+from hedgineer.utils import generate_none_tuple, parse_date
 
 
 @fixture
@@ -48,12 +48,6 @@ def nested_dict():
 
 
 @fixture
-def attributes():
-    attributes, _ = extract_header(TEST_AUDIT_TRAIL, ATTRIBUTE_PRIORITY)
-    return attributes
-
-
-@fixture
 def bucketed_facts(audit_trail):
     return bucket_facts(audit_trail)
 
@@ -64,9 +58,8 @@ def sorted_flat_facts(bucketed_facts):
 
 
 @fixture
-def security_master(sorted_flat_facts):
-    attributes, attribute_index = extract_header(TEST_AUDIT_TRAIL, ATTRIBUTE_PRIORITY)
-    return generate_sm_data_from_facts(sorted_flat_facts, attributes, attribute_index)
+def security_master(audit_trail, attribute_priority):
+    return generate_security_master(audit_trail, attribute_priority)
 
 
 def test_deeply_spread(nested_dict):
@@ -156,7 +149,7 @@ def test_generate_empty_row():
 
 
 def test_diff_row(audit_trail, attribute_priority):
-    _, attribute_index = extract_header(audit_trail, attribute_priority)
+    _, col_index = extract_header(audit_trail, attribute_priority)
     prior_row = (
         1,
         date(24, 1, 1),
@@ -170,10 +163,8 @@ def test_diff_row(audit_trail, attribute_priority):
     )
     new_row = diff_row(
         prior_row,
-        1,
-        date(24, 3, 22),
-        attribute_index,
-        [("ticker", "LENZ"), ("name", "Lenz Therapeutics, Inc")],
+        col_index,
+        (1, date(24, 3, 22), [("ticker", "LENZ"), ("name", "Lenz Therapeutics, Inc")]),
     )
 
     assert new_row == (
@@ -190,9 +181,8 @@ def test_diff_row(audit_trail, attribute_priority):
 
 
 def test_accumulate_fact(audit_trail, attribute_priority):
-    attributes, attribute_index = extract_header(audit_trail, attribute_priority)
-    sm_table = []
-
+    _, col_index = extract_header(audit_trail, attribute_priority)
+    data = []
     flat_fact = (
         1,
         date(2024, 1, 1),
@@ -204,9 +194,9 @@ def test_accumulate_fact(audit_trail, attribute_priority):
             ("name", "Graphite bio"),
         ],
     )
-    accumulate_fact((sm_table, attributes, attribute_index), flat_fact)
 
-    assert sm_table == [
+    accumulate_fact((data, col_index), flat_fact)
+    assert data == [
         (
             1,
             date(2024, 1, 1),
@@ -214,9 +204,9 @@ def test_accumulate_fact(audit_trail, attribute_priority):
             "equity",
             "GRPH",
             "Graphite bio",
-            None,
-            "healthcare",
             "biotechnology",
+            "healthcare",
+            None,
         )
     ]
 
@@ -228,9 +218,9 @@ def test_accumulate_fact(audit_trail, attribute_priority):
             ("name", "Lenz Therapeutics, Inc"),
         ],
     )
-    accumulate_fact((sm_table, attributes, attribute_index), flat_fact)
 
-    assert sm_table == [
+    accumulate_fact((data, col_index), flat_fact)
+    assert data == [
         (
             1,
             date(2024, 1, 1),
@@ -238,9 +228,9 @@ def test_accumulate_fact(audit_trail, attribute_priority):
             "equity",
             "GRPH",
             "Graphite bio",
-            None,
-            "healthcare",
             "biotechnology",
+            "healthcare",
+            None,
         ),
         (
             1,
@@ -249,22 +239,18 @@ def test_accumulate_fact(audit_trail, attribute_priority):
             "equity",
             "LENZ",
             "Lenz Therapeutics, Inc",
-            None,
-            "healthcare",
             "biotechnology",
+            "healthcare",
+            None,
         ),
     ]
 
 
-def test_generate_security_master_from_facts(
-    audit_trail, attribute_priority, sorted_flat_facts
-):
-    attributes, attribute_index = extract_header(audit_trail, attribute_priority)
-    security_master = generate_sm_data_from_facts(
-        sorted_flat_facts, attributes, attribute_index
-    )
+def test_generate_data_from_facts(audit_trail, attribute_priority, sorted_flat_facts):
+    _, col_index = extract_header(audit_trail, attribute_priority)
+    data = generate_data_from_facts(sorted_flat_facts, col_index)
 
-    assert security_master == [
+    assert data == [
         (
             1,
             date(2024, 1, 1),
@@ -272,9 +258,9 @@ def test_generate_security_master_from_facts(
             "equity",
             "GRPH",
             "Graphite bio",
-            None,
-            "healthcare",
             "biotechnology",
+            "healthcare",
+            None,
         ),
         (
             1,
@@ -283,9 +269,9 @@ def test_generate_security_master_from_facts(
             "equity",
             "LENZ",
             "Lenz Therapeutics, Inc",
-            None,
-            "healthcare",
             "biotechnology",
+            "healthcare",
+            None,
         ),
         (
             1,
@@ -294,9 +280,9 @@ def test_generate_security_master_from_facts(
             "equity",
             "LENZ",
             "Lenz Therapeutics, Inc",
-            400,
-            "healthcare",
             "biotechnology",
+            "healthcare",
+            400,
         ),
         (
             2,
@@ -327,16 +313,16 @@ def test_generate_security_master_from_facts(
             None,
             "V",
             None,
-            549000,
-            "financials",
             None,
+            "financials",
+            549000,
         ),
     ]
 
 
 def test_generate_security_master(audit_trail, attribute_priority):
-    _, security_master = generate_security_master(audit_trail, attribute_priority)
-    assert security_master == [
+    sm = generate_security_master(audit_trail, attribute_priority)
+    assert sm.data == [
         (
             1,
             date(2024, 1, 1),
@@ -344,9 +330,9 @@ def test_generate_security_master(audit_trail, attribute_priority):
             "equity",
             "GRPH",
             "Graphite bio",
-            None,
-            "healthcare",
             "biotechnology",
+            "healthcare",
+            None,
         ),
         (
             1,
@@ -355,9 +341,9 @@ def test_generate_security_master(audit_trail, attribute_priority):
             "equity",
             "LENZ",
             "Lenz Therapeutics, Inc",
-            None,
-            "healthcare",
             "biotechnology",
+            "healthcare",
+            None,
         ),
         (
             1,
@@ -366,9 +352,9 @@ def test_generate_security_master(audit_trail, attribute_priority):
             "equity",
             "LENZ",
             "Lenz Therapeutics, Inc",
-            400,
-            "healthcare",
             "biotechnology",
+            "healthcare",
+            400,
         ),
         (
             2,
@@ -399,16 +385,16 @@ def test_generate_security_master(audit_trail, attribute_priority):
             None,
             "V",
             None,
-            549000,
-            "financials",
             None,
+            "financials",
+            549000,
         ),
     ]
 
 
-def test_join_positions(security_master, positions_table, attributes):
-    _, joined_positions = join_positions(attributes, security_master, positions_table)
-    assert joined_positions == [
+def test_join_positions(security_master, positions_table):
+    jp = join_positions(security_master, positions_table)
+    assert jp.data == [
         (
             1,
             100,
@@ -416,9 +402,9 @@ def test_join_positions(security_master, positions_table, attributes):
             "equity",
             "GRPH",
             "Graphite bio",
-            None,
-            "healthcare",
             "biotechnology",
+            "healthcare",
+            None,
         ),
         (
             1,
@@ -427,9 +413,9 @@ def test_join_positions(security_master, positions_table, attributes):
             "equity",
             "GRPH",
             "Graphite bio",
-            None,
-            "healthcare",
             "biotechnology",
+            "healthcare",
+            None,
         ),
         (
             2,
@@ -449,9 +435,9 @@ def test_join_positions(security_master, positions_table, attributes):
             "equity",
             "GRPH",
             "Graphite bio",
-            None,
-            "healthcare",
             "biotechnology",
+            "healthcare",
+            None,
         ),
         (
             2,
@@ -467,12 +453,19 @@ def test_join_positions(security_master, positions_table, attributes):
     ]
 
 
-def test_extract_attributes():
-    attributes, attribute_index = extract_header(TEST_AUDIT_TRAIL, ATTRIBUTE_PRIORITY)
+def test_extract_header():
+    header, col_index = extract_header(TEST_AUDIT_TRAIL, ATTRIBUTE_PRIORITY)
 
-    assert set(attributes) == set(list(zip(*TEST_AUDIT_TRAIL))[1])
-    for k, v in attribute_index.items():
-        assert v == attributes.index(k)
+    assert set(header) == set(
+        (
+            "security_id",
+            "effective_start_date",
+            "effective_end_date",
+            *list(zip(*TEST_AUDIT_TRAIL))[1],
+        )
+    )
+    for k, v in col_index.items():
+        assert v == header.index(k)
         if k in ATTRIBUTE_PRIORITY:
             assert v == ATTRIBUTE_PRIORITY[k]
 
