@@ -11,6 +11,16 @@ from .types import AuditTrail, JoinedPositions, SecurityMaster
 from .utils import format_date, parse_date
 
 
+def generate_audit_trail(path) -> None:
+    data = [(1, "name", "ACME", "01/01/24")]
+
+    with open(path, mode="w+", newline="\n") as file:
+        writer = pycsv.writer(
+            file, quotechar='"', delimiter=",", quoting=pycsv.QUOTE_ALL
+        )
+        writer.writerows(data)
+
+
 def read_audit_trail(path) -> AuditTrail:
     audit_trail = []
 
@@ -22,7 +32,7 @@ def read_audit_trail(path) -> AuditTrail:
             quoting=pycsv.QUOTE_ALL,
             skipinitialspace=True,
         )
-        _ = next(csv_reader)  # discard the header
+
         for row in csv_reader:
             audit_trail.append(row)
 
