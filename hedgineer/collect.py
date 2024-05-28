@@ -1,6 +1,5 @@
 from functools import reduce
 from operator import itemgetter
-from typing import Any
 
 
 def extract_attributes(audit_trail, attribute_priority):
@@ -47,14 +46,14 @@ def generate_empty_row(length):
     return tuple(map(lambda _: None, range(length)))
 
 
-def diff_row(row, security_id, effective_date, attribute_index, facts):
+def diff_row(row, security_id, effective_date, attribute_index, kv_pairs):
     mutable_row = list(row)
 
     # Set date range
     mutable_row[0], mutable_row[1] = security_id, effective_date
 
-    # Add new facts that diff from prior mutable_row
-    for key, value in facts:
+    # Add new kv_pairs that diff from prior mutable_row
+    for key, value in kv_pairs:
         mutable_row[3 + attribute_index[key]] = value
 
     return tuple(mutable_row)
@@ -68,7 +67,7 @@ def accumulate_fact(security_master__attributes__attribute_index, flat_fact):
     new_security = len(security_master) == 0 or security_master[-1][0] != security_id
 
     prior_row = (
-        generate_empty_row(3 + len(attributes)) if new_security else security_master[-1]
+        generate_empty_row(len(attributes) + 3) if new_security else security_master[-1]
     )
     new_row = diff_row(prior_row, security_id, effective_date, attribute_index, facts)
 

@@ -2,7 +2,7 @@ from datetime import date
 
 from pytest import fixture
 
-from hedgineer.core import (
+from hedgineer.collect import (
     accumulate_fact,
     bucket_fact,
     bucket_facts,

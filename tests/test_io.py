@@ -4,7 +4,11 @@ import pyarrow as pa
 from pytest import fixture, raises
 from sqlalchemy import MetaData, create_engine
 
-from hedgineer.core import extract_attributes, generate_security_master, join_positions
+from hedgineer.collect import (
+    extract_attributes,
+    generate_security_master,
+    join_positions,
+)
 from hedgineer.globals import ATTRIBUTE_PRIORITY, AUDIT_TRAIL, POSITIONS_TABLE
 from hedgineer.io import (
     from_arrow,
