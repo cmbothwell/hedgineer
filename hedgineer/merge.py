@@ -1,5 +1,7 @@
-from .collect import diff_row, generate_empty_row, generate_sorted_flat_facts
-from .utils import replace_at_index
+from .collect import diff_row, extract_attributes, generate_sorted_flat_facts
+from .globals import ATTRIBUTE_PRIORITY
+from .io import format_table
+from .utils import generate_none_tuple, replace_at_index
 
 
 def get_value_diffs(current_row, kv_pairs, attribute_index):
@@ -32,7 +34,7 @@ def cascade_new_values(table, security_id, starting_index, value_diffs):
 
 def insert_new_security(sm_header, sm_table, flat_fact, attributes, attribute_index):
     security_id, d, kv_pairs = flat_fact
-    empty_row = generate_empty_row(len(attributes) + 3)
+    empty_row = generate_none_tuple(len(attributes) + 3)
     new_row = diff_row(
         empty_row,
         security_id,
@@ -59,7 +61,7 @@ def insert_before(
     sm_header, sm_table, row_to_insert_before, flat_fact, attributes, attribute_index
 ):
     security_id, d, kv_pairs = flat_fact
-    empty_row = generate_empty_row(len(attributes) + 3)
+    empty_row = generate_none_tuple(len(attributes) + 3)
     new_row = diff_row(
         empty_row,
         security_id,
@@ -179,9 +181,67 @@ def merge_flat_fact(
         )
 
 
+def expand_attributes(
+    sm_header,
+    sm_table,
+    old_attributes,
+    old_attribute_index,
+    audit_trail_update,
+    attribute_priority,
+):
+    attributes_from_update, _ = extract_attributes(
+        audit_trail_update, attribute_priority
+    )
+    new_attributes = list(
+        filter(lambda x: x not in old_attributes, attributes_from_update)
+    )
+
+    merged_attributes = sorted(
+        old_attributes + new_attributes,
+        key=lambda x: attribute_priority.get(x, float("inf")),
+    )
+    new_attribute_index = {v: i for i, v in enumerate(merged_attributes)}
+
+    sm_header = (
+        "security_id",
+        "effective_start_date",
+        "effective_end_date",
+        *merged_attributes,
+    )
+
+    table_length = len(sm_table)
+    table_columns = list(zip(*sm_table))
+    new_table_as_columns = [
+        table_columns[0],
+        table_columns[1],
+        table_columns[2],
+        *map(
+            lambda _: generate_none_tuple(table_length), range(len(merged_attributes))
+        ),
+    ]
+
+    for value in old_attributes:
+        new_table_as_columns[new_attribute_index[value] + 3] = table_columns[
+            old_attribute_index[value] + 3
+        ]
+
+    sm_table = list(zip(*new_table_as_columns))
+
+    return sm_header, sm_table, merged_attributes, new_attribute_index
+
+
 def merge_audit_trail_update(
     sm_header, sm_table, attributes, attribute_index, audit_trail_update
 ):
+    sm_header, sm_table, attributes, attribute_index = expand_attributes(
+        sm_header,
+        sm_table,
+        attributes,
+        attribute_index,
+        audit_trail_update,
+        ATTRIBUTE_PRIORITY,
+    )
+
     flat_facts_to_merge = generate_sorted_flat_facts(audit_trail_update)
     for flat_fact in flat_facts_to_merge:
         sm_header, sm_table = merge_flat_fact(

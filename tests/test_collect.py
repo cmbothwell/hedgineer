@@ -10,13 +10,12 @@ from hedgineer.collect import (
     diff_row,
     extract_attributes,
     flatten_and_sort_facts,
-    generate_empty_row,
     generate_security_master,
     generate_security_master_from_facts,
     join_positions,
 )
 from hedgineer.globals import ATTRIBUTE_PRIORITY, TEST_AUDIT_TRAIL, POSITIONS_TABLE
-from hedgineer.utils import parse_date
+from hedgineer.utils import parse_date, generate_none_tuple
 
 
 @fixture
@@ -155,9 +154,9 @@ def test_flatten_and_sort_facts(bucketed_facts):
 
 
 def test_generate_empty_row():
-    assert generate_empty_row(4) == (None, None, None, None)
-    assert generate_empty_row(5) == (None, None, None, None, None)
-    assert generate_empty_row(0) == ()
+    assert generate_none_tuple(4) == (None, None, None, None)
+    assert generate_none_tuple(5) == (None, None, None, None, None)
+    assert generate_none_tuple(0) == ()
 
 
 def test_diff_row(audit_trail, attribute_priority):

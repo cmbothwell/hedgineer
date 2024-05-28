@@ -6,3 +6,7 @@ format_date = lambda x: datetime.strftime(x, "%m/%d/%y")
 
 def replace_at_index(t: tuple, i: int, v):
     return (*t[:i], v, *t[i + 1 :])
+
+
+def generate_none_tuple(length):
+    return tuple(map(lambda _: None, range(length)))

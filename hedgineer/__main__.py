@@ -76,27 +76,41 @@ def remove_empty_columns(sm_header, sm_table):
 
 
 def filter_by_asset_class(sm_header, sm_table, asset_class):
-    sm_table = list(filter(lambda x: x[3] == asset_class, sm_table))
-    return remove_empty_columns(sm_header, sm_table)
+    # Don't mutate the original
+    filtered_sm_table = list(filter(lambda x: x[3] == asset_class, sm_table))
+    return remove_empty_columns(sm_header, filtered_sm_table)
 
 
 sm_header, sm_table, attributes, attributes = merge_audit_trail_update(
     sm_header, sm_table, attributes, attribute_index, AUDIT_TRAIL_UPDATE
 )
+
 print(
     format_table(
-        "Security Master",
+        "Security Master after Update",
         sm_header,
         sm_table,
     )
 )
 
-sm_header, sm_table = filter_by_asset_class(sm_header, sm_table, "equity")
+
+sm_header_equities, sm_table_equities = filter_by_asset_class(
+    sm_header, sm_table, "equity"
+)
+sm_header_fi, sm_table_fi = filter_by_asset_class(sm_header, sm_table, "fixed_income")
+
 print(
     format_table(
-        "Security Master",
-        sm_header,
-        sm_table,
+        "Security Master (Equities)",
+        sm_header_equities,
+        sm_table_equities,
+    )
+)
+print(
+    format_table(
+        "Security Master (Fixed Income)",
+        sm_header_fi,
+        sm_table_fi,
     )
 )
 

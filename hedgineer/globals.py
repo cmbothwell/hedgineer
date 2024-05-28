@@ -45,6 +45,8 @@ AUDIT_TRAIL_UPDATE: list[tuple] = [
     (1, "gics_industry", "health sciences", parse_date("03/01/24")),
     (1, "market_cap", 90000, parse_date("05/26/24")),
     (2, "market_cap", 548000, parse_date("05/26/24")),
+    (1, "new_key", 123, parse_date("05/26/24")),
+    (2, "new_key", 456, parse_date("03/17/23")),
 ]
 
 POSITIONS_TABLE = [

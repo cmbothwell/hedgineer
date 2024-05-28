@@ -1,6 +1,8 @@
 from functools import reduce
 from operator import itemgetter
 
+from .utils import generate_none_tuple
+
 
 def extract_attributes(audit_trail, attribute_priority):
     attributes = sorted(
@@ -42,10 +44,6 @@ def flatten_and_sort_facts(bucketed_facts):
     return sorted(deeply_spread(bucketed_facts), key=itemgetter(0, 1))
 
 
-def generate_empty_row(length):
-    return tuple(map(lambda _: None, range(length)))
-
-
 def diff_row(row, security_id, effective_date, attribute_index, kv_pairs):
     mutable_row = list(row)
 
@@ -67,7 +65,9 @@ def accumulate_fact(security_master__attributes__attribute_index, flat_fact):
     new_security = len(security_master) == 0 or security_master[-1][0] != security_id
 
     prior_row = (
-        generate_empty_row(len(attributes) + 3) if new_security else security_master[-1]
+        generate_none_tuple(len(attributes) + 3)
+        if new_security
+        else security_master[-1]
     )
     new_row = diff_row(prior_row, security_id, effective_date, attribute_index, facts)
 
