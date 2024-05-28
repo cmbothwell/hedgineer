@@ -6,7 +6,7 @@ import pyarrow.parquet as pq
 from sqlalchemy import Column, Date, Float, Integer, String, Table, insert, select
 from sqlalchemy.schema import CreateTable
 
-from .types import SecurityMaster
+from .types import JoinedPositions, SecurityMaster
 from .utils import format_date
 
 
@@ -27,6 +27,17 @@ def format_sm(
     ]
 
     return title + "\n" + get_pretty_table([sm.header, *table]) + "\n"
+
+
+def format_jp(
+    jp: JoinedPositions,
+    title: str,
+) -> str:
+    table = [
+        tuple(format_date(v) if isinstance(v, date) else v for v in t) for t in jp.data
+    ]
+
+    return title + "\n" + get_pretty_table([jp.header, *table]) + "\n"
 
 
 def parse_data_type(column):

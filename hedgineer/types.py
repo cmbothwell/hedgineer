@@ -23,3 +23,18 @@ class SecurityMaster(BaseModel):
 
     def to_tuple(self):
         return (self.header, self.data, self.col_index)
+
+
+type TableData = list[tuple]
+
+
+class JoinedPositions(BaseModel):
+    header: Header
+    data: TableData
+
+    @classmethod
+    def from_tuple(cls, t: tuple[Header, TableData]):
+        return cls(header=t[0], data=t[1])
+
+    def to_tuple(self):
+        return (self.header, self.data)

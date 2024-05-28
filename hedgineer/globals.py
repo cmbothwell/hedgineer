@@ -26,6 +26,7 @@ TEST_AUDIT_TRAIL: list[tuple] = [
 
 AUDIT_TRAIL: list[tuple] = [
     (1, "ticker", "LENZ", parse_date("03/22/24")),
+    (3, "ticker", "ACME", parse_date("01/01/24")),
     (2, "market_cap", 549000, parse_date("05/23/24")),
     (1, "gics_sector", "healthcare", parse_date("01/01/24")),
     (1, "ticker", "GRPH", parse_date("01/01/24")),

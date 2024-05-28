@@ -3,12 +3,7 @@ from datetime import date
 import pyarrow as pa
 from sqlalchemy import MetaData, create_engine
 
-from .collect import (
-    extract_header,
-    generate_security_master,
-    generate_sorted_flat_facts,
-    join_positions,
-)
+from .collect import filter_by_asset_class, generate_security_master, join_positions
 from .globals import (
     ATTRIBUTE_PRIORITY,
     AUDIT_TRAIL,
@@ -16,6 +11,7 @@ from .globals import (
     POSITIONS_TABLE,
 )
 from .io import (
+    format_jp,
     format_sm,
     from_arrow,
     from_pandas,
@@ -36,25 +32,17 @@ print(format_sm(sm, "Security Master"))
 sm = merge_audit_trail_update(sm, AUDIT_TRAIL_UPDATE, ATTRIBUTE_PRIORITY)
 print(format_sm(sm, "Security Master after Merge"))
 
+sm_equity = filter_by_asset_class(sm, "equity")
+print(format_sm(sm_equity, "Security Master (Equities)"))
 
-def remove_empty_columns(sm_header, sm_table):
-    column_empty_map = list(
-        map(lambda col: all(val is None for val in col), zip(*sm_table))
-    )
-    sm_header = [v for i, v in enumerate(sm_header) if not column_empty_map[i]]
-    sm_table = [
-        tuple(v for i, v in enumerate(t) if not column_empty_map[i]) for t in sm_table
-    ]
-    return sm_header, sm_table
+sm_fi = filter_by_asset_class(sm, "fixed_income")
+print(format_sm(sm_fi, "Security Master (Fixed Income)"))
 
+sm_catch_all = filter_by_asset_class(sm, None)
+print(format_sm(sm_catch_all, "Security Master (Other)"))
 
-def filter_by_asset_class(sm_header, sm_table, asset_class):
-    # Don't mutate the original
-    filtered_sm_table = list(filter(lambda x: x[3] == asset_class, sm_table))
-    return remove_empty_columns(sm_header, filtered_sm_table)
-
-
-# jp_header, jp_table = join_positions(attributes, sm_table, POSITIONS_TABLE)
+jp = join_positions(sm, POSITIONS_TABLE)
+print(format_jp(jp, "Consolidated Position Information"))
 
 
 # arrow_table, schema = to_arrow(sm_header, sm_table)

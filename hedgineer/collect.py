@@ -9,6 +9,7 @@ from .types import (
     ColumnIndex,
     FlatFactSet,
     Header,
+    JoinedPositions,
     SecurityMaster,
     SMData,
 )
@@ -111,27 +112,67 @@ def generate_security_master(
     return SecurityMaster.from_tuple((header, data, col_index))
 
 
-# TODO Typing
-def join_position(security_master: list[tuple], position: tuple) -> tuple:
+def remove_empty_columns(sm: SecurityMaster) -> SecurityMaster:
+    if len(sm.data) == 0:
+        return sm
+
+    column_empty_map = list(
+        map(lambda col: all(val is None for val in col), zip(*sm.data))
+    )
+    new_header = [v for i, v in enumerate(sm.header) if not column_empty_map[i]]
+    new_col_index = {v: i for i, v in enumerate(new_header)}
+    new_data = [
+        tuple(v for i, v in enumerate(t) if not column_empty_map[i]) for t in sm.data
+    ]
+
+    return SecurityMaster.from_tuple((new_header, new_data, new_col_index))
+
+
+def filter_by_asset_class(sm: SecurityMaster, asset_class: str | None):
+    filtered_sm = SecurityMaster.from_tuple(
+        (
+            sm.header,
+            list(
+                filter(lambda x: x[sm.col_index["asset_class"]] == asset_class, sm.data)
+            ),
+            sm.col_index,
+        )
+    )
+    return remove_empty_columns(filtered_sm)
+
+
+def join_position(sm: SecurityMaster, attributes: list[str], position: tuple) -> tuple:
     security_id, quantity, date = position
+
     try:
         master_row = next(
             filter(
                 lambda x: x[0] == security_id and x[1] <= date and x[2] > date,
-                security_master,
+                sm.data,
             )
         )
     except StopIteration:
         return []
 
-    return tuple((security_id, quantity, date, *master_row[3:]))
+    return tuple(
+        (
+            security_id,
+            quantity,
+            date,
+            *map(lambda attr: master_row[sm.col_index[attr]], attributes),
+        )
+    )
 
 
-def join_positions(
-    attributes: list[str], security_master: list[tuple], positions_table: list[tuple]
-):
+def join_positions(sm: SecurityMaster, positions_table: list[tuple]) -> JoinedPositions:
+    attributes = [
+        attr
+        for attr in sm.header
+        if attr not in ["security_id", "effective_start_date", "effective_end_date"]
+    ]
     header = ["security_id", "quantity", "date", *attributes]
     joined_positions = [
-        join_position(security_master, position) for position in positions_table
+        join_position(sm, attributes, position) for position in positions_table
     ]
-    return header, joined_positions
+
+    return JoinedPositions.from_tuple((header, joined_positions))
