@@ -98,6 +98,8 @@ def generate_data_from_facts(
     sorted_flat_facts: list[FlatFactSet],
     col_index: ColumnIndex,
 ) -> SMData:
+    sm_data: list[tuple]  # Solely for mypy
+
     sm_data, _ = reduce(accumulate_fact, sorted_flat_facts, ([], col_index))
     return sm_data
 
@@ -157,7 +159,7 @@ def join_position(sm: SecurityMaster, attributes: list[str], position: tuple) ->
             )
         )
     except StopIteration:
-        return []
+        return tuple([])
 
     return tuple(
         (

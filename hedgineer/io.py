@@ -2,9 +2,9 @@ import csv as pycsv
 from datetime import date
 from random import randint
 
-import pyarrow as pa
-import pyarrow.csv as csv
-import pyarrow.parquet as pq
+import pyarrow as pa  # type: ignore
+import pyarrow.csv as csv  # type: ignore
+import pyarrow.parquet as pq  # type: ignore
 from sqlalchemy import Column, Date, Float, Integer, String, Table, insert, select
 from sqlalchemy.schema import CreateTable
 
@@ -44,7 +44,9 @@ def read_audit_trail(path) -> AuditTrail:
         for row in csv_reader:
             audit_trail.append(row)
 
-    return [[int(row[0]), row[1], row[2], parse_date(row[3])] for row in audit_trail]
+    return [
+        tuple([int(row[0]), row[1], row[2], parse_date(row[3])]) for row in audit_trail
+    ]
 
 
 def get_pretty_table(table: list[tuple]):
@@ -66,7 +68,7 @@ def format_sm(
     if len(table) == 0:
         return "No securities available\n"
 
-    return title + "\n" + get_pretty_table([sm.header, *table]) + "\n"
+    return title + "\n" + get_pretty_table([tuple(sm.header), *table]) + "\n"
 
 
 def format_jp(
@@ -80,7 +82,7 @@ def format_jp(
     if len(table) == 0:
         return "No positions available\n"
 
-    return title + "\n" + get_pretty_table([jp.header, *table]) + "\n"
+    return title + "\n" + get_pretty_table([tuple(jp.header), *table]) + "\n"
 
 
 def parse_data_type(column):
@@ -129,7 +131,7 @@ def from_arrow(arrow_table) -> SecurityMaster:
     col_index = {v: i for i, v in enumerate(header)}
     data = [tuple(v for v in row.values()) for row in py_table]
 
-    return SecurityMaster.from_tuple((header, data, col_index))
+    return SecurityMaster.from_tuple((list(header), data, col_index))
 
 
 def to_pandas(sm: SecurityMaster):

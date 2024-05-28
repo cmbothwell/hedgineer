@@ -3,13 +3,15 @@ from typing import Any
 
 from pydantic import BaseModel
 
-type AuditFact = tuple[int, str, Any, date]
-type AuditTrail = list[AuditFact]
-type Header = list[str]
-type SMData = list[tuple]
-type ColumnIndex = dict[str, int]
-type AttributePair = tuple[str, Any]
-type FlatFactSet = tuple[int, date, list[AttributePair]]
+# mypy complains about this Python 3.12 feature
+type AuditFact = tuple[int, str, Any, date]  # type: ignore
+type AuditTrail = list[AuditFact]  # type: ignore
+type Header = list[str]  # type: ignore
+type SMData = list[tuple]  # type: ignore
+type ColumnIndex = dict[str, int]  # type: ignore
+type AttributePair = tuple[str, Any]  # type: ignore
+type FlatFactSet = tuple[int, date, list[AttributePair]]  # type: ignore
+type TableData = list[tuple]  # type: ignore
 
 
 class SecurityMaster(BaseModel):
@@ -23,9 +25,6 @@ class SecurityMaster(BaseModel):
 
     def to_tuple(self):
         return (self.header, self.data, self.col_index)
-
-
-type TableData = list[tuple]
 
 
 class JoinedPositions(BaseModel):

@@ -22,7 +22,7 @@ def generate_none_tuple(length):
 
 
 def deeply_spread(dd: dict[Any, Any]):
-    result = []
+    result: list = []
 
     for k, v in dd.items():
         if isinstance(v, dict):
