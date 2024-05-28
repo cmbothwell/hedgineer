@@ -47,9 +47,7 @@ def attributes():
 
 @fixture
 def security_master():
-    sm_header, sm_table = generate_security_master(TEST_AUDIT_TRAIL, ATTRIBUTE_PRIORITY)
-
-    return sm_header, sm_table
+    return generate_security_master(TEST_AUDIT_TRAIL, ATTRIBUTE_PRIORITY)
 
 
 def test_parse_data_type():
@@ -84,63 +82,48 @@ def test_parse_data_type():
 
 
 def test_to_arrow_from_arrow(security_master):
-    sm_header, sm_table = security_master
+    arrow_table, _ = to_arrow(security_master)
+    converted_sm = from_arrow(arrow_table)
 
-    arrow_table, _ = to_arrow(sm_header, sm_table)
-    converted_header, converted_table = from_arrow(arrow_table)
-
-    assert converted_header == sm_header
-    assert converted_table == sm_table
+    assert converted_sm.header == security_master.header
+    assert converted_sm.data == security_master.data
+    assert converted_sm.col_index == security_master.col_index
 
 
 def test_to_pandas_from_pandas(security_master):
-    sm_header, sm_table = security_master
+    df, schema = to_pandas(security_master)
+    converted_sm = from_pandas(df, schema)
 
-    df, schema = to_pandas(sm_header, sm_table)
-    converted_header, converted_table = from_pandas(df, schema)
-
-    assert converted_header == sm_header
-    assert converted_table == sm_table
+    assert converted_sm.header == security_master.header
+    assert converted_sm.data == security_master.data
+    assert converted_sm.col_index == security_master.col_index
 
 
 def test_write_parquet_read_parquet(security_master):
-    sm_header, sm_table = security_master
+    schema, output_stream = write_parquet(security_master, pa.BufferOutputStream())
+    converted_sm = read_parquet(pa.BufferReader(output_stream.getvalue()), schema)
 
-    output_stream, schema = write_parquet(pa.BufferOutputStream(), sm_header, sm_table)
-    converted_header, converted_table = read_parquet(
-        pa.BufferReader(output_stream.getvalue()), schema
-    )
-
-    assert converted_header == sm_header
-    assert converted_table == sm_table
+    assert converted_sm.header == security_master.header
+    assert converted_sm.data == security_master.data
+    assert converted_sm.col_index == security_master.col_index
 
 
 def test_write_csv_read_csv(security_master):
-    sm_header, sm_table = security_master
+    convert_options, output_stream = write_csv(security_master, pa.BufferOutputStream())
+    converted_sm = read_csv(pa.BufferReader(output_stream.getvalue()), convert_options)
 
-    output_stream, convert_options = write_csv(
-        pa.BufferOutputStream(), sm_header, sm_table
-    )
-    converted_header, converted_table = read_csv(
-        pa.BufferReader(output_stream.getvalue()), convert_options
-    )
-
-    assert converted_header == sm_header
-    assert converted_table == sm_table
+    assert converted_sm.header == security_master.header
+    assert converted_sm.data == security_master.data
+    assert converted_sm.col_index == security_master.col_index
 
 
 def test_write_sql_read_sql(security_master):
-    sm_header, sm_table = security_master
-
     engine = create_engine("sqlite:///:memory:")
     metadata = MetaData()
 
-    metadata, schema = write_sql(
-        engine, metadata, "security_master", sm_header, sm_table
-    )
-    converted_header, converted_table = read_sql(
-        engine, metadata, "security_master", schema
-    )
+    schema, metadata = write_sql(security_master, engine, metadata, "security_master")
+    converted_sm = read_sql(schema, engine, metadata, "security_master")
 
-    assert converted_header == sm_header
-    assert converted_table == sm_table
+    assert converted_sm.header == security_master.header
+    assert converted_sm.data == security_master.data
+    assert converted_sm.col_index == security_master.col_index
