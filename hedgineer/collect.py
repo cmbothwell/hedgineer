@@ -147,7 +147,12 @@ def join_position(sm: SecurityMaster, attributes: list[str], position: tuple) ->
     try:
         master_row = next(
             filter(
-                lambda x: x[0] == security_id and x[1] <= date and x[2] > date,
+                lambda x: x[sm.col_index["security_id"]] == security_id
+                and x[sm.col_index["effective_start_date"]] <= date
+                and (
+                    x[sm.col_index["effective_end_date"]] is None
+                    or x[sm.col_index["effective_end_date"]] > date
+                ),
                 sm.data,
             )
         )
