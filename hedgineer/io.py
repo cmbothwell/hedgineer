@@ -67,7 +67,7 @@ def parse_data_type(column):
     raise Exception("Could not parse column for Arrow conversion: data type not found")
 
 
-def to_arrow(sm: SecurityMaster):
+def to_arrow(sm: SecurityMaster) -> tuple[pa.Table, pa.Schema]:
     raw_columns = list(zip(*sm.data))
     data_types = map(parse_data_type, raw_columns)
     schema = pa.schema(list(zip(sm.header, data_types)))
