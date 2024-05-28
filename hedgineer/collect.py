@@ -180,7 +180,7 @@ def join_positions(sm: SecurityMaster, positions_table: list[tuple]) -> JoinedPo
     header = ["security_id", "quantity", "date", *attributes]
     joined_positions = list(
         filter(
-            lambda x: x != [],
+            lambda x: x != (),
             [join_position(sm, attributes, position) for position in positions_table],
         )
     )
