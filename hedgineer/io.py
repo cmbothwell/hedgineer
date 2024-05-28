@@ -6,10 +6,11 @@ import pyarrow.parquet as pq
 from sqlalchemy import Column, Date, Float, Integer, String, Table, insert, select
 from sqlalchemy.schema import CreateTable
 
+from .types import SecurityMaster
 from .utils import format_date
 
 
-def get_pretty_table(table) -> str:
+def get_pretty_table(table: list[tuple]):
     s = [[str(e) for e in row] for row in table]
     lens = [max(map(len, col)) for col in zip(*s)]
     fmt = "\t".join("{{:{0}}}".format(x) for x in lens)
@@ -17,11 +18,15 @@ def get_pretty_table(table) -> str:
     return "\n".join(pretty_table)
 
 
-def format_table(title, header, table) -> str:
+def format_sm(
+    sm: SecurityMaster,
+    title: str,
+) -> str:
     table = [
-        tuple(format_date(v) if isinstance(v, date) else v for v in t) for t in table
+        tuple(format_date(v) if isinstance(v, date) else v for v in t) for t in sm.data
     ]
-    return title + "\n" + get_pretty_table([header, *table]) + "\n"
+
+    return title + "\n" + get_pretty_table([sm.header, *table]) + "\n"
 
 
 def parse_data_type(column):

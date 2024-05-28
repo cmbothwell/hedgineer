@@ -8,10 +8,10 @@ from hedgineer.collect import (
     bucket_facts,
     deeply_spread,
     diff_row,
-    extract_attributes,
+    extract_header,
     flatten_and_sort_facts,
     generate_security_master,
-    generate_security_master_from_facts,
+    generate_sm_data_from_facts,
     join_positions,
 )
 from hedgineer.globals import ATTRIBUTE_PRIORITY, TEST_AUDIT_TRAIL, POSITIONS_TABLE
@@ -49,7 +49,7 @@ def nested_dict():
 
 @fixture
 def attributes():
-    attributes, _ = extract_attributes(TEST_AUDIT_TRAIL, ATTRIBUTE_PRIORITY)
+    attributes, _ = extract_header(TEST_AUDIT_TRAIL, ATTRIBUTE_PRIORITY)
     return attributes
 
 
@@ -65,12 +65,8 @@ def sorted_flat_facts(bucketed_facts):
 
 @fixture
 def security_master(sorted_flat_facts):
-    attributes, attribute_index = extract_attributes(
-        TEST_AUDIT_TRAIL, ATTRIBUTE_PRIORITY
-    )
-    return generate_security_master_from_facts(
-        sorted_flat_facts, attributes, attribute_index
-    )
+    attributes, attribute_index = extract_header(TEST_AUDIT_TRAIL, ATTRIBUTE_PRIORITY)
+    return generate_sm_data_from_facts(sorted_flat_facts, attributes, attribute_index)
 
 
 def test_deeply_spread(nested_dict):
@@ -160,7 +156,7 @@ def test_generate_empty_row():
 
 
 def test_diff_row(audit_trail, attribute_priority):
-    _, attribute_index = extract_attributes(audit_trail, attribute_priority)
+    _, attribute_index = extract_header(audit_trail, attribute_priority)
     prior_row = (
         1,
         date(24, 1, 1),
@@ -194,7 +190,7 @@ def test_diff_row(audit_trail, attribute_priority):
 
 
 def test_accumulate_fact(audit_trail, attribute_priority):
-    attributes, attribute_index = extract_attributes(audit_trail, attribute_priority)
+    attributes, attribute_index = extract_header(audit_trail, attribute_priority)
     sm_table = []
 
     flat_fact = (
@@ -263,8 +259,8 @@ def test_accumulate_fact(audit_trail, attribute_priority):
 def test_generate_security_master_from_facts(
     audit_trail, attribute_priority, sorted_flat_facts
 ):
-    attributes, attribute_index = extract_attributes(audit_trail, attribute_priority)
-    security_master = generate_security_master_from_facts(
+    attributes, attribute_index = extract_header(audit_trail, attribute_priority)
+    security_master = generate_sm_data_from_facts(
         sorted_flat_facts, attributes, attribute_index
     )
 
@@ -472,9 +468,7 @@ def test_join_positions(security_master, positions_table, attributes):
 
 
 def test_extract_attributes():
-    attributes, attribute_index = extract_attributes(
-        TEST_AUDIT_TRAIL, ATTRIBUTE_PRIORITY
-    )
+    attributes, attribute_index = extract_header(TEST_AUDIT_TRAIL, ATTRIBUTE_PRIORITY)
 
     assert set(attributes) == set(list(zip(*TEST_AUDIT_TRAIL))[1])
     for k, v in attribute_index.items():

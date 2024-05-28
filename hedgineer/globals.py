@@ -1,11 +1,12 @@
-from datetime import date
-
 from .utils import parse_date
 
 ATTRIBUTE_PRIORITY = {
-    "asset_class": 0,
-    "ticker": 1,
-    "name": 2,
+    "security_id": 0,
+    "effective_start_date": 1,
+    "effective_end_date": 2,
+    "asset_class": 3,
+    "ticker": 4,
+    "name": 5,
 }
 
 TEST_AUDIT_TRAIL: list[tuple] = [

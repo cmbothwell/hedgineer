@@ -5,7 +5,7 @@ from pytest import fixture, raises
 from sqlalchemy import MetaData, create_engine
 
 from hedgineer.collect import (
-    extract_attributes,
+    extract_header,
     generate_security_master,
     join_positions,
 )
@@ -42,7 +42,7 @@ def positions_table():
 
 @fixture
 def attributes():
-    return extract_attributes(TEST_AUDIT_TRAIL, ATTRIBUTE_PRIORITY)
+    return extract_header(TEST_AUDIT_TRAIL, ATTRIBUTE_PRIORITY)
 
 
 @fixture
