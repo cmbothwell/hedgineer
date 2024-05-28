@@ -67,29 +67,30 @@ def parse_data_type(column):
     raise Exception("Could not parse column for Arrow conversion: data type not found")
 
 
-def to_arrow(column_names: list[str], table: list[tuple]):
-    raw_columns = list(zip(*table))
+def to_arrow(sm: SecurityMaster):
+    raw_columns = list(zip(*sm.data))
     data_types = map(parse_data_type, raw_columns)
-    schema = pa.schema(list(zip(column_names, data_types)))
+    schema = pa.schema(list(zip(sm.header, data_types)))
 
     return pa.table(raw_columns, schema=schema), schema
 
 
-def to_arrow_with_schema(table: list[tuple], schema):
-    raw_columns = list(zip(*table))
+def to_arrow_with_schema(data: list[tuple], schema):
+    raw_columns = list(zip(*data))
     return pa.table(raw_columns, schema=schema), schema
 
 
-def from_arrow(arrow_table):
+def from_arrow(arrow_table) -> SecurityMaster:
     py_table = arrow_table.to_pylist()
     header = tuple(k for k in py_table[0].keys()) if len(py_table) > 0 else tuple()
-    table = [tuple(v for v in row.values()) for row in py_table]
+    col_index = {v: i for i, v in enumerate(header)}
+    data = [tuple(v for v in row.values()) for row in py_table]
 
-    return header, table
+    return SecurityMaster.from_tuple((header, data, col_index))
 
 
-def to_pandas(column_names: list[str], table: list[tuple]):
-    arrow_table, schema = to_arrow(column_names, table)
+def to_pandas(sm: SecurityMaster):
+    arrow_table, schema = to_arrow(sm)
     return arrow_table.to_pandas(), schema
 
 
@@ -98,11 +99,11 @@ def from_pandas(df, schema):
     return from_arrow(arrow_table)
 
 
-def write_parquet(where, column_names: list[str], table: list[tuple]):
-    arrow_table, schema = to_arrow(column_names, table)
+def write_parquet(sm, where):
+    arrow_table, schema = to_arrow(sm)
     pq.write_table(arrow_table, where)
 
-    return where, schema
+    return schema, where
 
 
 def read_parquet(where, schema):
@@ -110,15 +111,15 @@ def read_parquet(where, schema):
     return from_arrow(arrow_table)
 
 
-def write_csv(where, column_names: list[str], table: list[tuple]):
-    arrow_table, schema = to_arrow(column_names, table)
+def write_csv(sm, where):
+    arrow_table, schema = to_arrow(sm)
     convert_options = csv.ConvertOptions(
         column_types={field.name: field.type for field in schema},
         strings_can_be_null=True,
     )
 
     csv.write_csv(arrow_table, where)
-    return where, convert_options
+    return convert_options, where
 
 
 def read_csv(where, convert_options):
@@ -145,13 +146,12 @@ def map_field_to_sql_column(field):
 
 
 def write_sql(
+    sm: SecurityMaster,
     engine,
     metadata,
     table_name: str,
-    column_names: list[str],
-    table: list[tuple],
 ):
-    arrow_table, schema = to_arrow(column_names, table)
+    arrow_table, schema = to_arrow(sm)
     columns = list(map(map_field_to_sql_column, schema))
     sql_table = Table(table_name, metadata, *columns)
 
@@ -160,12 +160,11 @@ def write_sql(
         conn.execute(insert(sql_table).values(arrow_table.to_pylist()))
         conn.commit()
 
-    return metadata, schema
+    return schema, metadata
 
 
-def read_sql(engine, metadata, table_name, schema):
+def read_sql(schema, engine, metadata, table_name: str):
     table = metadata.tables[table_name]
-
     with engine.connect() as conn:
         rows = list(conn.execute(select(table)))
 
