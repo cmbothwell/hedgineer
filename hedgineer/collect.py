@@ -99,7 +99,7 @@ def generate_security_master(audit_trail, attribute_priority):
     bucketed_facts = bucket_facts(audit_trail)
     sorted_flat_facts = flatten_and_sort_facts(bucketed_facts)
 
-    header = ["security_id", "effective_start_date", "effective_end_date", *attributes]
+    header = ("security_id", "effective_start_date", "effective_end_date", *attributes)
     security_master = generate_security_master_from_facts(
         sorted_flat_facts, attributes, attribute_index
     )

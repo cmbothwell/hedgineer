@@ -13,6 +13,12 @@ def attributes():
 
 
 @fixture
+def base_header(attributes):
+    attributes, _ = attributes
+    return ("security_id", "effective_start_date", "effective_end_date", *attributes)
+
+
+@fixture
 def base_table():
     return [
         (
@@ -189,18 +195,21 @@ def test_cascade_new_values():
     ]
 
 
-def test_merge_flat_fact_new_security(attributes, base_table):
+def test_merge_flat_fact_new_security(attributes, base_header, base_table):
     attributes, attribute_index = attributes
-    assert merge_flat_fact(
+    _, result_table = merge_flat_fact(
+        base_header,
         base_table.copy(),
+        attributes,
+        attribute_index,
         (
             2,
             date(2024, 3, 1),
             [("gics_sector", "new_a"), ("gics_industry", "new_b"), ("market_cap", 100)],
         ),
-        attributes,
-        attribute_index,
-    ) == [
+    )
+
+    assert result_table == [
         (
             1,
             date(2024, 1, 1),
@@ -247,9 +256,10 @@ def test_merge_flat_fact_new_security(attributes, base_table):
         ),
     ]
 
-    assert merge_flat_fact(
+    _, result_table = merge_flat_fact(
+        base_header,
         [
-            *base_table,
+            *base_table.copy(),
             (
                 3,
                 date(2024, 3, 1),
@@ -262,14 +272,16 @@ def test_merge_flat_fact_new_security(attributes, base_table):
                 None,
             ),
         ],
+        attributes,
+        attribute_index,
         (
             2,
             date(2024, 3, 1),
             [("gics_sector", "new_a"), ("gics_industry", "new_b"), ("market_cap", 100)],
         ),
-        attributes,
-        attribute_index,
-    ) == [
+    )
+
+    assert result_table == [
         (
             1,
             date(2024, 1, 1),
@@ -328,18 +340,21 @@ def test_merge_flat_fact_new_security(attributes, base_table):
     ]
 
 
-def test_merge_flat_fact_insert_before(attributes, base_table):
+def test_merge_flat_fact_insert_before(attributes, base_header, base_table):
     attributes, attribute_index = attributes
-    assert merge_flat_fact(
-        base_table,
+    _, result_table = merge_flat_fact(
+        base_header,
+        base_table.copy(),
+        attributes,
+        attribute_index,
         (
             1,
             date(2023, 1, 1),
             [("gics_sector", "new_a"), ("gics_industry", "new_b"), ("market_cap", 100)],
         ),
-        attributes,
-        attribute_index,
-    ) == [
+    )
+
+    assert result_table == [
         (
             1,
             date(2023, 1, 1),
@@ -387,18 +402,21 @@ def test_merge_flat_fact_insert_before(attributes, base_table):
     ]
 
 
-def test_merge_flat_fact_insert_after(attributes, base_table):
+def test_merge_flat_fact_insert_after(attributes, base_header, base_table):
     attributes, attribute_index = attributes
-    assert merge_flat_fact(
+    _, result_table = merge_flat_fact(
+        base_header,
         base_table,
+        attributes,
+        attribute_index,
         (
             1,
             date(2024, 6, 1),
             [("gics_sector", "new_a"), ("gics_industry", "new_b"), ("market_cap", 100)],
         ),
-        attributes,
-        attribute_index,
-    ) == [
+    )
+
+    assert result_table == [
         (
             1,
             date(2024, 1, 1),
@@ -446,18 +464,21 @@ def test_merge_flat_fact_insert_after(attributes, base_table):
     ]
 
 
-def test_merge_flat_fact_merge(attributes, base_table):
+def test_merge_flat_fact_merge(attributes, base_header, base_table):
     attributes, attribute_index = attributes
-    assert merge_flat_fact(
+    _, result_table = merge_flat_fact(
+        base_header,
         base_table,
+        attributes,
+        attribute_index,
         (
             1,
             date(2024, 3, 1),
             [("gics_sector", "new_a"), ("gics_industry", "new_b"), ("market_cap", 100)],
         ),
-        attributes,
-        attribute_index,
-    ) == [
+    )
+
+    assert result_table == [
         (
             1,
             date(2024, 1, 1),
@@ -505,18 +526,21 @@ def test_merge_flat_fact_merge(attributes, base_table):
     ]
 
 
-def test_merge_flat_fact_split(attributes, base_table):
+def test_merge_flat_fact_split(attributes, base_header, base_table):
     attributes, attribute_index = attributes
-    assert merge_flat_fact(
+    _, result_table = merge_flat_fact(
+        base_header,
         base_table,
+        attributes,
+        attribute_index,
         (
             1,
             date(2024, 3, 22),
             [("gics_sector", "new_a"), ("gics_industry", "new_b"), ("market_cap", 100)],
         ),
-        attributes,
-        attribute_index,
-    ) == [
+    )
+
+    result_table == [
         (
             1,
             date(2024, 1, 1),

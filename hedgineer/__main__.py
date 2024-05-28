@@ -28,7 +28,7 @@ from .io import (
     write_parquet,
     write_sql,
 )
-from .merge import merge_flat_fact
+from .merge import merge_audit_trail_update
 
 attributes, attribute_index = extract_attributes(AUDIT_TRAIL, ATTRIBUTE_PRIORITY)
 sm_header, sm_table = generate_security_master(AUDIT_TRAIL, ATTRIBUTE_PRIORITY)
@@ -64,16 +64,6 @@ print(
 # )
 
 
-def merge_audit_trail_update(sm_header, sm_table, audit_trail_update, attribute_index):
-    flat_facts_to_merge = generate_sorted_flat_facts(audit_trail_update)
-    for flat_fact in flat_facts_to_merge:
-        sm_header, sm_table = merge_flat_fact(
-            sm_header, sm_table, flat_fact, attributes, attribute_index
-        )
-
-    return sm_header, sm_table
-
-
 def remove_empty_columns(sm_header, sm_table):
     column_empty_map = list(
         map(lambda col: all(val is None for val in col), zip(*sm_table))
@@ -90,8 +80,8 @@ def filter_by_asset_class(sm_header, sm_table, asset_class):
     return remove_empty_columns(sm_header, sm_table)
 
 
-sm_header, sm_table = merge_audit_trail_update(
-    sm_header, sm_table, AUDIT_TRAIL_UPDATE, attribute_index
+sm_header, sm_table, attributes, attributes = merge_audit_trail_update(
+    sm_header, sm_table, attributes, attribute_index, AUDIT_TRAIL_UPDATE
 )
 print(
     format_table(

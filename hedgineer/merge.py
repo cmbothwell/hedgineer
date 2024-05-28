@@ -1,4 +1,4 @@
-from .collect import diff_row, generate_empty_row
+from .collect import diff_row, generate_empty_row, generate_sorted_flat_facts
 from .utils import replace_at_index
 
 
@@ -130,7 +130,13 @@ def split_row(sm_header, sm_table, row_to_split, flat_fact, _, attribute_index):
     )
 
 
-def merge_flat_fact(sm_header, sm_table, flat_fact, attributes, attribute_index):
+def merge_flat_fact(
+    sm_header,
+    sm_table,
+    attributes,
+    attribute_index,
+    flat_fact,
+):
     security_id, d, _ = flat_fact
     security_rows = list(filter(lambda x: x[0] == security_id, sm_table))
 
@@ -171,3 +177,19 @@ def merge_flat_fact(sm_header, sm_table, flat_fact, attributes, attribute_index)
         return split_row(
             sm_header, sm_table, row_to_split, flat_fact, attributes, attribute_index
         )
+
+
+def merge_audit_trail_update(
+    sm_header, sm_table, attributes, attribute_index, audit_trail_update
+):
+    flat_facts_to_merge = generate_sorted_flat_facts(audit_trail_update)
+    for flat_fact in flat_facts_to_merge:
+        sm_header, sm_table = merge_flat_fact(
+            sm_header,
+            sm_table,
+            attributes,
+            attribute_index,
+            flat_fact,
+        )
+
+    return sm_header, sm_table, attributes, attribute_index

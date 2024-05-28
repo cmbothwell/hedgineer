@@ -66,7 +66,7 @@ def to_arrow_with_schema(table: list[tuple], schema):
 
 def from_arrow(arrow_table):
     py_table = arrow_table.to_pylist()
-    header = [k for k in py_table[0].keys()] if len(py_table) > 0 else []
+    header = tuple(k for k in py_table[0].keys()) if len(py_table) > 0 else tuple()
     table = [tuple(v for v in row.values()) for row in py_table]
 
     return header, table
