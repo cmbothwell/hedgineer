@@ -1,3 +1,6 @@
+# Files 
+audit_trail_generated.csv
+
 # Python stuff
 venv
 __pycache__
