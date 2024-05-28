@@ -101,7 +101,7 @@ def insert_before(
     # set end date to start date of next row
     new_row = replace_at_index(
         new_row,
-        sm.col_index["effective_end_data"],
+        sm.col_index["effective_end_date"],
         row_to_insert_before[sm.col_index["effective_start_date"]],
     )
 
