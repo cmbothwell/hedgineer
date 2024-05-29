@@ -74,11 +74,11 @@ AUDIT_TRAIL_UPDATE: list[tuple] = [
 ]
 
 POSITIONS_TABLE = [
-    (1, 100, parse_date("02/01/24")),
-    (1, 105, parse_date("02/01/24")),
-    (2, 150, parse_date("02/01/24")),
-    (1, 120, parse_date("03/01/24")),
-    (2, 140, parse_date("03/01/24")),
+    (1, 100, parse_date("01/01/24")),
+    (1, 105, parse_date("01/02/24")),
+    (2, 150, parse_date("01/02/24")),
+    (1, 120, parse_date("01/03/24")),
+    (2, 140, parse_date("01/03/24")),
     (3, 100, parse_date("03/01/24")),
     (4, 10, parse_date("03/01/24")),
     (5, 210, parse_date("03/01/24")),
