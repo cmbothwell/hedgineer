@@ -398,7 +398,7 @@ def test_join_positions(security_master, positions_table):
         (
             1,
             100,
-            date(2024, 2, 1),
+            date(2024, 1, 1),
             "equity",
             "GRPH",
             "Graphite bio",
@@ -409,7 +409,7 @@ def test_join_positions(security_master, positions_table):
         (
             1,
             105,
-            date(2024, 2, 1),
+            date(2024, 1, 2),
             "equity",
             "GRPH",
             "Graphite bio",
@@ -420,7 +420,7 @@ def test_join_positions(security_master, positions_table):
         (
             2,
             150,
-            date(2024, 2, 1),
+            date(2024, 1, 2),
             None,
             "V",
             None,
@@ -431,7 +431,7 @@ def test_join_positions(security_master, positions_table):
         (
             1,
             120,
-            date(2024, 3, 1),
+            date(2024, 1, 3),
             "equity",
             "GRPH",
             "Graphite bio",
@@ -442,7 +442,7 @@ def test_join_positions(security_master, positions_table):
         (
             2,
             140,
-            date(2024, 3, 1),
+            date(2024, 1, 3),
             None,
             "V",
             None,
