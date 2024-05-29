@@ -2,8 +2,6 @@
 
 ### Setup
 
-This is just to get up and running, to see my actual write-up on my solution and my please go [here](#development)
-
 Requires:
 
 - `Python 3.12+`
