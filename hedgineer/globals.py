@@ -79,6 +79,11 @@ POSITIONS_TABLE = [
     (2, 150, parse_date("02/01/24")),
     (1, 120, parse_date("03/01/24")),
     (2, 140, parse_date("03/01/24")),
+    (3, 100, parse_date("03/01/24")),
+    (4, 10, parse_date("03/01/24")),
+    (5, 210, parse_date("03/01/24")),
+    (6, 140, parse_date("03/15/24")),
+    (7, 140, parse_date("03/15/24")),
 ]
 
 ASSET_CLASSES = [

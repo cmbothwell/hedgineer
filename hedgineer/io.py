@@ -49,6 +49,7 @@ def read_audit_trail(path) -> AuditTrail:
     ]
 
 
+# https://stackoverflow.com/questions/13214809/pretty-print-2d-list
 def get_pretty_table(table: list[tuple]):
     s = [[str(e) for e in row] for row in table]
     lens = [max(map(len, col)) for col in zip(*s)]
