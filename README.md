@@ -44,11 +44,11 @@ The quick version if you don't want to read the more elaborate version below:
 - We want to convert this into a structured table per (security_id, effective_date), which is essentially a **hierarchical key**
 - We can bucket together the key-value pairs ("facts") respecting this hierarchical key, so pairs with the same (security_id, effective_date) are collected together
 - We can sort these buckets first by security_id, and then effective_date
-- We can now finally assemble a table indexed by this hierarchical key by carefully stiching together buckets with the same security_id, taking note of which facts change in each bucket (i.e. on a new date) and propagating those to future rows in the table (of the same security of course)
+- We can now finally assemble a table indexed by this hierarchical key by carefully stiching together buckets with the same security_id, taking note of which facts change in each bucket (i.e. on a new date) and propagating those to future rows in the table (of the same security)
 - Once we have this table we can join it on other tables like position data which gives us an overview of our positions over time along with the characteristics of their component securities
 - We can also go deeper in 3 ways:
-- **A** We want to selectively view different tables for different types of assets, because fixed-income assets have very different properties than equity assets. I solved this in a very straightforward way after almost completely over-complicating it
-- **B** The world continues to turn. As we accrue new facts of information, we might not want to recompute the Security Master from scratch. We can bucket batches of facts that arrive into an update (a batch of new facts) and selectively _merge_ this new batch of information into the existing table. There are some nuance and edge cases here, i.e. handling new columns in the table due to new key-value pairs
+- **A** We want to selectively view different tables for different types of assets, because fixed-income assets have very different properties than equity assets, etc.. I solved this in a very straightforward way after almost completely over-complicating it
+- **B** The world continues to turn. As we accrue new facts of information, we might not want to recompute the Security Master from scratch. We can bucket batches of facts that arrive into an update (a batch of new facts) and selectively _merge_ this new batch of information into the existing table. There are some nuances and edge cases here, i.e. handling new columns in the table due to new key-value pairs
 - **C** We might want to easily export our security master to other tools for analysis or persistence. I show how we might do that using Apache Arrow
 
 ## Building a Security Master
@@ -57,7 +57,7 @@ Imagine we want to collect data on securities in order to invest and trade. We c
 
 There are a couple of interesting challenges to note here:
 
-1. We can't really say in advance what kind of facts we'll collect about securities. Although we might be able to enumerate every single property we're interested in _now_, the world is a moving target, and our needs might change. Additionally, we can't rely on data vendors not to change their methods or what information they will be able to provide. Conclusion: we can't really enforce a strict schema
+1. We can't really say in advance what kind of facts we'll collect about securities. Although we might be able to enumerate every single property we're interested in _now_, the world is a moving target, and our needs might change. Additionally, we can't rely on the information data vendors might be able to provide, or that they won't change their methods or schema. Conclusion: we can't really enforce a strict schema
 
 2. We don't have complete control over when facts arrive to us. Companies delay announcements, providers have outages, errors are made etc. We need to be able to react to data as it comes in
 
@@ -87,7 +87,7 @@ AUDIT_TRAIL: list[AuditFace] = [
 ]
 ```
 
-where the first column represents the `security_id`, the second and third the key and value attribute pair, respectively, and the fourth the `effective_date` of the fact. Here `parse_date` simply converts the textual date into a `datetime.date` object.
+where the first column represents the `security_id`, the second and third the key and value attribute pair, respectively, and the fourth the `effective_date` of the fact (this is basically the audit trail from the prompt with a few extra additions I added). Here `parse_date` simply converts the textual date into a `datetime.date` object.
 
 We can think of our Security Master as being indexed by a hierarchical key, i.e. (security_id, effective_date).
 
@@ -168,7 +168,8 @@ We now have all of the requisite parts to build our table:
 - The header values
 - The sorted flat facts, which as a reminder are of the form `(security_id, date, [*kv_pairs])`
 - The column index
-  An important point that we can take advantage of when constructing our table is that the flat, bucketed facts from before are **_already sorted in the table order we require_**. This is hugely beneficial because it means we can iterate over our buckets and build rows in the table solely by examining the available facts in the bucket as well as the information in the prior row of the same security (if avaiable).
+
+An important point that we can take advantage of when constructing our table is that the flat, bucketed facts from before are **_already sorted in the table order we require_**. This is hugely beneficial because it means we can iterate over our buckets and build rows in the table solely by examining the available facts in the bucket as well as the information in the prior row of the same security (if avaiable).
 
 We'll start at the high-level, there isn't much to see yet:
 
@@ -208,9 +209,9 @@ def accumulate_fact(
 
 Let's unpack this. We first destructure the accumulator variable into the actual list that represents our accumulated table data as well as the column index we generated before. We also extract the the `security_id` and `effective_date` from the flat fact tuple.
 
-We then check if the row we are inserting into the table represents a new security. This happens for the first row in the table or when the prior row has a different `security_id`. If we are inserting a row for a new security, our facts will represent the first pieces of data in time for this security (because our facts are very helpfully sorted). In this case, we use a helper `generate_none_tuple` to generate a tuple with the appopriate amount of `None` values. We'll use this to diff with our facts in just a moment.
+We then check if the row we are inserting into the table represents a new security. This happens for the first row in the table or when the prior row has a different `security_id`. If we are inserting a row for a new security, our facts will represent the first pieces of data in time for this security (because our facts are very helpfully sorted). In this case, we use a helper `generate_none_tuple` to generate a tuple with the appropriate amount of `None` values. We'll use this to diff with our facts in just a moment.
 
-In the case that there is already a row in the table for the security in question, we want to instead copy this previous row, as our new facts will instead represent diffs to this **prior information**. There is a nice unity to the API here in both of these cases, in that once we have the prior row regardless if it's from the same security or a new one, we can call `diff_row` with our facts to correctly update the tuple. We can also observe the importance of our column index used to index into the tuple attributes.
+In the case that there is already a row in the table for the security in question, we want to instead copy this previous row, as our new facts will instead represent diffs to this **prior information**. There is a nice unity to the API here in both of these cases, in that once we have the prior row, regardless if it's from the same security or a new one, we can call `diff_row` with our facts to correctly update the tuple. We can also observe the importance of our column index used to index into the tuple attributes.
 
 Once we've successfully diff'ed the tuple, we also need to update the `effective_end_date` of the prior row if it was from the same security. That row's validity ends on the effective date of the new row we're adding. After we've done that, we add the new row to the table accumulator and return.
 
@@ -234,7 +235,7 @@ def diff_row(prior_row: tuple, col_index: ColumnIndex, flat_fact: FlatFactSet):
     return tuple(new_row)
 ```
 
-Inside `diff_row` we take the prior row, convert it to a mutable list, set the `security_id` and `effective_start_date` to their respective values, and finall loop over the attribute pairs and set those as well. We convert it back to a tuple and return.
+Inside `diff_row` we take the prior row, convert it to a mutable list, set the `security_id` and `effective_start_date` to their respective values, and finally loop over the attribute pairs and set those as well. We convert it back to a tuple and return.
 
 Putting it all together we have:
 
@@ -350,7 +351,7 @@ def join_position(sm: SecurityMaster, attributes: list[str], position: tuple) ->
     )
 ```
 
-Here, we extract the row yielded by a filter object restricted to rows in the Security Master that have the same `security_id` and that contain the `date` field from the row in the position table. Given the nature of our Security Master, this should only be one or zero rows. If the row is available we collate the attributes along with the position date, otherwise we return an empty tuple. We can then display this in the console similarly as before with the SM.
+Here, we extract the row yielded by a filter object restricted to rows in the Security Master that have the same `security_id` and that contain the `date` field from the row in the position table. Given the nature of our Security Master, this should only be one or zero rows. If the row is available we collate the attributes along with the position data, otherwise we return an empty tuple. We can then display this in the console similarly as before with the SM.
 
 Running `python -m hedgineer -m -p` should yield:
 
@@ -364,6 +365,8 @@ security_id     quantity        date            asset_class     ticker  name    
 2               140             03/01/24        fixed_income    V       None            None            financials      199             None
 3               100             03/01/24        None            ACME    None            None            None            None            None
 ```
+
+This is a relatively straightforward implementation to demonstrate the concept, a production implementation could be more robust.
 
 ## Enhancement A: Slicing & Dicing by Asset Class
 
@@ -540,7 +543,7 @@ security_id     effective_start_date    effective_end_date      asset_class     
 
 which shows the original table plus an updated table merged with data from an updated audit trail:
 
-```
+```python
 AUDIT_TRAIL_UPDATE: list[tuple] = [
     (1, "market_cap", 100, parse_date("03/01/24")),
     (1, "gics_industry", "health sciences", parse_date("03/01/24")),
@@ -557,7 +560,7 @@ Note that we can define batch updates by their granularity or size, i.e. how qui
 
 ## Enhancement C: Robustly Exporting to External Tools
 
-We might want to export our Security Master to other tools, programming languages, environments, databases etc. We also might want to persist copies of it for durability or compliance requirements. I wanted to explore how I might use Apache Arrow to serve as a unified interface for exporting and importing. Arrow is an in-memory format for describing structued tabular data in a column-first format. If we can serialize our Security Master data to Arrow, we can use Arrow as an interface for exporting to various other formats and importing this data back to our Security Master in exactly the format we expect.
+We might want to export our Security Master to other tools, programming languages, environments, databases etc. We also might want to persist copies of it for durability or compliance requirements. I wanted to explore how I might use Apache Arrow to serve as a unified interface for exporting and importing. Arrow is an in-memory format for describing structued tabular data in a column-first format. If we can serialize our Security Master data to Arrow, we can use Arrow as an interface for exporting to various other formats as well as importing this data back to our Security Master in exactly the format we expect.
 
 This turned out to work really well, and I was super pleased how this little experiment turned out! Using the official Python bindings `pyarrow`, it was very straightforward to serialize our Security Master to an in-memory Arrow table:
 
@@ -688,4 +691,4 @@ If you run `python -m hedgineer -s` you should see an in-memory echo representat
 
 I didn't have time to try and implement a small demo of this, but the smooth nature of exporting to Apache Arrow gave me a really interesting idea. Let's say hypothetically we're building parts of our data management pipeline in Python. We're definitely going to have some tests that test our exported data and our pipeline's functionality. Now, we could write these tests purely against Python native data structures. However if we _instead_ run these tests against these Apache Arrow arrays, a really interesting possibility opens up.
 
-Let's say at some point we start to scale and performance and reliability become an issue, and we decide to rewrite parts of our platform in a separate language (Java, Go, Rust etc.). Because our tests are written against a sharable, convertible format, we can slowly rewrite portions of the platform that demand performance improvements, but we get to keep our tests in python to verify our new implementation. That's awesome!
+Let's say at some point we start to scale and performance and reliability become an issue, and we decide to rewrite parts of our platform in a separate language (Java, Go, Rust etc.). Because our tests are written against a sharable, convertible format, we can slowly rewrite portions of the platform that demand performance improvements, but we get to keep our tests in Python to verify our new implementation. That's awesome!
