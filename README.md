@@ -553,6 +553,10 @@ AUDIT_TRAIL_UPDATE: list[tuple] = [
 ]
 ```
 
+#### Streaming
+
+Note that we can define batch updates by their granularity or size, i.e. how quickly and with what size of batch. As the batch size approaches 1 and we merge in new facts as we receive them, at some point we can start to say that the merging process is no longer performed in "batches" but is actually a "streaming" API that merges changes in real-time.
+
 ## Enhancement C: Robustly Exporting to External Tools
 
 We might want to export our Security Master to other tools, programming languages, environments, databases etc. We also might want to persist copies of it for durability or compliance requirements. I wanted to explore how I might use Apache Arrow to serve as a unified interface for exporting and importing. Arrow is an in-memory format for describing structued tabular data in a column-first format. If we can serialize our Security Master data to Arrow, we can use Arrow as an interface for exporting to various other formats and importing this data back to our Security Master in exactly the format we expect.
@@ -682,6 +686,8 @@ def read_sql(schema, engine, metadata, table_name: str):
 
 If you run `python -m hedgineer -s` you should see an in-memory echo representation of the SQL queries that would be used to store and retrieve the Security Master from a SQL Database.
 
-#### TODO: Addendum, testing in C
+## Addendum: Enhancement D?: Python testing Other Implementations
 
-#### TODO: Final notes
+I didn't have time to try and implement a small demo of this, but the smooth nature of exporting to Apache Arrow gave me a really interesting idea. Let's say hypothetically we're building parts of our data management pipeline in Python. We're definitely going to have some tests that test our exported data and our pipeline's functionality. Now, we could write these tests purely against Python native data structures. However if we _instead_ run these tests against these Apache Arrow arrays, a really interesting possibility opens up.
+
+Let's say at some point we start to scale and performance and reliability become an issue, and we decide to rewrite parts of our platform in a separate language (Java, Go, Rust etc.). Because our tests are written against a sharable, convertible format, we can slowly rewrite portions of the platform that demand performance improvements, but we get to keep our tests in python to verify our new implementation. That's awesome!
